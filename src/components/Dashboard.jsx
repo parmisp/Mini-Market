@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Wallet, RefreshCw, HelpCircle, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Wallet, RefreshCw, HelpCircle, Settings, LogOut, Trophy } from 'lucide-react';
 import StockCard from './StockCard';
 import GoalTracker from './GoalTracker';
 import Confetti from './Confetti';
@@ -10,12 +10,17 @@ import SettingsDropdown from './SettingsDropdown';
 import StockyChatbot from './StockyChatbot';
 import TradeHistory from './TradeHistory';
 import BeginnerTooltip from './BeginnerTooltip';
+import Leaderboard from './Leaderboard';
 import { getStockPrices, buyStock, sellStock } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 function Dashboard({ userData }) {
+  const { signOut, saveGameState, saveTransaction, loadTransactionHistory, updateLeaderboardEntry } = useAuth();
+
   const [stocks, setStocks] = useState([]);
-  const [balance, setBalance] = useState(100);
-  const [portfolio, setPortfolio] = useState({});
+  // Initialize from userData (Firestore) or default to 100
+  const [balance, setBalance] = useState(userData?.balance ?? 100);
+  const [portfolio, setPortfolio] = useState(userData?.portfolio ?? {});
   const [tradeHistory, setTradeHistory] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastBalance, setLastBalance] = useState(100);
@@ -26,6 +31,7 @@ function Dashboard({ userData }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showInteractiveTutorial, setShowInteractiveTutorial] = useState(true); // Show on first load
   const [showSettings, setShowSettings] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [settings, setSettings] = useState({
     soundEnabled: true,
     theme: 'space',
@@ -68,14 +74,36 @@ function Dashboard({ userData }) {
     // Beginner: 20 seconds (slower, easier to react)
     // Intermediate: 15 seconds (balanced)
     // Expert: 10 seconds (faster, more challenging)
-    const updateInterval = userData?.experience === 'beginner' ? 20000 : 
-                          userData?.experience === 'expert' ? 10000 : 
+    const updateInterval = userData?.experience === 'beginner' ? 20000 :
+                          userData?.experience === 'expert' ? 10000 :
                           15000;
-    
+
     fetchPrices();
     const interval = setInterval(fetchPrices, updateInterval);
     return () => clearInterval(interval);
   }, [userData?.experience]);
+
+  // Load transaction history from Firestore on mount
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const history = await loadTransactionHistory();
+        if (history && history.length > 0) {
+          setTradeHistory(history.map(t => ({
+            type: t.type,
+            name: t.stockName,
+            emoji: t.emoji,
+            price: t.price,
+            profit: t.profit,
+            time: new Date(t.timestamp).toLocaleTimeString()
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load history:', error);
+      }
+    }
+    loadHistory();
+  }, []);
   
   // Check for achievements
   useEffect(() => {
@@ -99,20 +127,22 @@ function Dashboard({ userData }) {
   
   const handleBuy = async (stockId) => {
     const stock = stocks.find(s => s.id === stockId);
-    
+
     if (balance < stock.price) {
       return;
     }
-    
+
     try {
       // Update locally first for instant feedback
       const newBalance = balance - stock.price;
-      setBalance(newBalance);
-      setPortfolio({
+      const newPortfolio = {
         ...portfolio,
         [stockId]: (portfolio[stockId] || 0) + 1
-      });
-      
+      };
+
+      setBalance(newBalance);
+      setPortfolio(newPortfolio);
+
       // Add to history
       setTradeHistory(prev => [{
         type: 'BUY',
@@ -121,8 +151,19 @@ function Dashboard({ userData }) {
         price: stock.price,
         time: new Date().toLocaleTimeString()
       }, ...prev]);
-      
-      // Call backend
+
+      // Save to Firestore
+      await saveGameState(newBalance, newPortfolio);
+      await saveTransaction('BUY', stock.name, stock.emoji, stock.price);
+
+      // Update leaderboard
+      const newPortfolioValue = stocks.reduce((sum, s) => {
+        const owned = newPortfolio[s.id] || 0;
+        return sum + (owned * s.price);
+      }, 0);
+      await updateLeaderboardEntry(newBalance + newPortfolioValue, newPortfolioValue);
+
+      // Call backend API (optional - for external stock service)
       await buyStock(stockId);
     } catch (error) {
       console.error('Buy failed:', error);
@@ -130,26 +171,27 @@ function Dashboard({ userData }) {
       setBalance(balance);
     }
   };
-  
+
   const handleSell = async (stockId) => {
     const stock = stocks.find(s => s.id === stockId);
     const owned = portfolio[stockId] || 0;
-    
+
     if (owned === 0) {
       return;
     }
-    
+
     try {
       // Update locally
       const newBalance = balance + stock.price;
       const profit = stock.price - (stock.initialPrice || stock.price);
-      
-      setBalance(newBalance);
-      setPortfolio({
+      const newPortfolio = {
         ...portfolio,
         [stockId]: owned - 1
-      });
-      
+      };
+
+      setBalance(newBalance);
+      setPortfolio(newPortfolio);
+
       // Add to history
       setTradeHistory(prev => [{
         type: 'SELL',
@@ -159,8 +201,19 @@ function Dashboard({ userData }) {
         profit: profit,
         time: new Date().toLocaleTimeString()
       }, ...prev]);
-      
-      // Call backend
+
+      // Save to Firestore
+      await saveGameState(newBalance, newPortfolio);
+      await saveTransaction('SELL', stock.name, stock.emoji, stock.price, profit);
+
+      // Update leaderboard
+      const newPortfolioValue = stocks.reduce((sum, s) => {
+        const owned = newPortfolio[s.id] || 0;
+        return sum + (owned * s.price);
+      }, 0);
+      await updateLeaderboardEntry(newBalance + newPortfolioValue, newPortfolioValue);
+
+      // Call backend API (optional - for external stock service)
       await sellStock(stockId);
     } catch (error) {
       console.error('Sell failed:', error);
@@ -197,6 +250,18 @@ function Dashboard({ userData }) {
                   className="text-[10px] border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-emerald-500/10 transition"
                 >
                   Edit Goal ⚙️
+                </button>
+                <button
+                  onClick={() => setShowLeaderboard(true)}
+                  className="text-[10px] border border-yellow-500/50 text-yellow-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-yellow-500/10 transition flex items-center gap-1"
+                >
+                  <Trophy size={12} /> Leaderboard
+                </button>
+                <button
+                  onClick={signOut}
+                  className="text-[10px] border border-red-500/50 text-red-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-red-500/10 transition flex items-center gap-1"
+                >
+                  <LogOut size={12} /> Sign Out
                 </button>
               </div>
             </div>
@@ -253,6 +318,12 @@ function Dashboard({ userData }) {
       {showTutorial && (
         <TutorialModal onClose={() => setShowTutorial(false)} />
       )}
+
+      {/* Leaderboard Modal */}
+      <Leaderboard
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+      />
       
       {/* Main Layout with Side Panel */}
       <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-140px)]">
