@@ -14,6 +14,15 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+// Helper to convert numeric age to age group string
+function getAgeGroup(age) {
+  if (!age) return 'unknown';
+  if (age <= 8) return '6-8';
+  if (age <= 11) return '9-11';
+  if (age <= 14) return '12-14';
+  return '15+';
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -59,7 +68,7 @@ export function AuthProvider({ children }) {
     await setDoc(leaderboardRef, {
       userId: currentUser.uid,
       name: profileData.name || 'Anonymous',
-      ageGroup: profileData.ageGroup || 'unknown',
+      ageGroup: getAgeGroup(profileData.age),
       experience: profileData.experience || 'beginner',
       netWorth: 100,
       portfolioValue: 0,
@@ -162,7 +171,7 @@ export function AuthProvider({ children }) {
       await setDoc(leaderboardRef, {
         userId: currentUser.uid,
         name: userData.name || 'Anonymous',
-        ageGroup: userData.ageGroup || 'unknown',
+        ageGroup: getAgeGroup(userData.age),
         experience: userData.experience || 'beginner',
         netWorth: netWorth,
         portfolioValue: portfolioValue,
