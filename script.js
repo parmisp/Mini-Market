@@ -1,6 +1,8 @@
 let balance = 100.00;
 let targetGoal = 200.00;
 let goalName = "AirPod Max";
+let currentUser = null;
+let isSignUpMode = false;
 
 const stocks = {
     eco: { name: "EcoPulse", emoji: "🌿", price: 8.00, owned: 0, risk: "Low", vol: 0.8 },
@@ -13,13 +15,180 @@ const stocks = {
 
 // UI Toggles
 function toggleModal(id) { document.getElementById(`${id}-modal`).classList.toggle('hidden'); }
-function toggleChat() { 
-    document.getElementById('chat-window').classList.toggle('hidden'); 
+function toggleChat() {
+    document.getElementById('chat-window').classList.toggle('hidden');
     document.getElementById('pet-bubble-main').classList.add('hidden');
 }
 
+// Auth Functions
+function showAuthModal() {
+    document.getElementById('auth-modal').classList.remove('hidden');
+}
+
+function hideAuthModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
+}
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('auth-title').innerText = isSignUpMode ? 'Sign Up' : 'Sign In';
+    document.getElementById('auth-submit-btn').innerText = isSignUpMode ? 'Sign Up' : 'Sign In';
+    document.getElementById('auth-toggle').innerHTML = isSignUpMode
+        ? 'Already have an account? <span class="text-blue-400 font-bold">Sign In</span>'
+        : 'Don\'t have an account? <span class="text-blue-400 font-bold">Sign Up</span>';
+    document.getElementById('auth-error').classList.add('hidden');
+}
+
+async function handleAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const errorEl = document.getElementById('auth-error');
+
+    if (!email || !password) {
+        errorEl.innerText = 'Please enter email and password';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        if (isSignUpMode) {
+            await auth.createUserWithEmailAndPassword(email, password);
+        } else {
+            await auth.signInWithEmailAndPassword(email, password);
+        }
+    } catch (error) {
+        errorEl.innerText = error.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+async function signOut() {
+    try {
+        await auth.signOut();
+    } catch (error) {
+        console.error('Sign out error:', error);
+    }
+}
+
+// Auth State Listener
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        hideAuthModal();
+        document.getElementById('signout-btn').classList.remove('hidden');
+        await loadGameState();
+        createStockCards();
+        updateUI();
+    } else {
+        currentUser = null;
+        document.getElementById('signout-btn').classList.add('hidden');
+        showAuthModal();
+    }
+});
+
+// Firestore Functions
+async function loadGameState() {
+    if (!currentUser) return;
+
+    try {
+        // Load profile
+        const profileDoc = await db.collection('users').doc(currentUser.uid).get();
+
+        if (profileDoc.exists) {
+            const data = profileDoc.data();
+            balance = data.balance ?? 100;
+            targetGoal = data.targetGoal ?? 200;
+            goalName = data.goalName ?? "AirPod Max";
+
+            document.getElementById('goal-name-display').innerText = goalName;
+            document.getElementById('goal-value-display').innerText = `$${targetGoal}`;
+
+            // Load stock holdings
+            if (data.stocks) {
+                Object.keys(data.stocks).forEach(key => {
+                    if (stocks[key]) {
+                        stocks[key].owned = data.stocks[key].owned || 0;
+                    }
+                });
+            }
+        }
+
+        // Load transaction history
+        await loadTransactionHistory();
+    } catch (error) {
+        console.error('Load error:', error);
+    }
+}
+
+async function saveGameState() {
+    if (!currentUser) return;
+
+    try {
+        const holdings = {};
+        Object.keys(stocks).forEach(key => {
+            holdings[key] = { owned: stocks[key].owned };
+        });
+
+        await db.collection('users').doc(currentUser.uid).set({
+            balance: balance,
+            targetGoal: targetGoal,
+            goalName: goalName,
+            stocks: holdings,
+            lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (error) {
+        console.error('Save error:', error);
+    }
+}
+
+async function saveTransaction(type, stockId, stockName, price) {
+    if (!currentUser) return;
+
+    try {
+        await db.collection('users').doc(currentUser.uid)
+            .collection('transactions').add({
+                type: type,
+                stockId: stockId,
+                stockName: stockName,
+                price: price,
+                quantity: 1,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+    } catch (error) {
+        console.error('Transaction save error:', error);
+    }
+}
+
+async function loadTransactionHistory() {
+    if (!currentUser) return;
+
+    try {
+        const snapshot = await db.collection('users').doc(currentUser.uid)
+            .collection('transactions')
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get();
+
+        // Clear existing history display
+        const body = document.getElementById('history-body');
+        body.innerHTML = '';
+
+        if (snapshot.empty) {
+            body.innerHTML = '<p id="no-history" class="text-xs text-slate-600 text-center mt-20 italic font-medium">Ready for your first move, investor?</p>';
+            return;
+        }
+
+        snapshot.docs.reverse().forEach(doc => {
+            const t = doc.data();
+            addToHistory(t.type, t.stockName, t.price, false);
+        });
+    } catch (error) {
+        console.error('Load history error:', error);
+    }
+}
+
 // Goal Settings
-function saveSettings() {
+async function saveSettings() {
     const name = document.getElementById('goal-name-input').value;
     const val = document.getElementById('goal-value-input').value;
     if (name) goalName = name;
@@ -28,6 +197,7 @@ function saveSettings() {
     document.getElementById('goal-value-display').innerText = `$${targetGoal}`;
     toggleModal('settings');
     updateUI();
+    await saveGameState();
 }
 
 // Market View
@@ -69,27 +239,42 @@ function updateUI() {
     document.getElementById('goal-percent').innerText = Math.floor(prog) + "%";
 }
 
-function addToHistory(type, name, price) {
+function addToHistory(type, name, price, isNew = true) {
     const body = document.getElementById('history-body');
     const empty = document.getElementById('no-history');
     if (empty) empty.remove();
     const div = document.createElement('div');
     div.className = `history-item p-4 rounded-[1.5rem] border-l-4 ${type === 'BUY' ? 'border-emerald-500 bg-emerald-500/5' : 'border-red-500 bg-red-500/5'} mb-3 glass-panel`;
-    div.innerHTML = `<div class="flex justify-between font-black text-[9px] uppercase mb-1"><span class="${type === 'BUY' ? 'text-emerald-400' : 'text-red-400'}">${type}</span><span class="text-slate-600">${new Date().toLocaleTimeString()}</span></div><div class="flex justify-between items-center"><span class="text-xs font-bold">${name}</span><span class="text-white font-black">$${price.toFixed(2)}</span></div>`;
-    body.prepend(div);
+    const priceDisplay = typeof price === 'number' ? price.toFixed(2) : parseFloat(price).toFixed(2);
+    div.innerHTML = `<div class="flex justify-between font-black text-[9px] uppercase mb-1"><span class="${type === 'BUY' ? 'text-emerald-400' : 'text-red-400'}">${type}</span><span class="text-slate-600">${new Date().toLocaleTimeString()}</span></div><div class="flex justify-between items-center"><span class="text-xs font-bold">${name}</span><span class="text-white font-black">$${priceDisplay}</span></div>`;
+    if (isNew) {
+        body.prepend(div);
+    } else {
+        body.appendChild(div);
+    }
 }
 
-function buyStock(id) {
+async function buyStock(id) {
     if (balance >= stocks[id].price) {
-        balance -= stocks[id].price; stocks[id].owned++;
-        addToHistory('BUY', stocks[id].name, stocks[id].price); updateUI();
-    } else { stockyAutomatedMsg("Hoot! You need more cash for that trade. 💸"); }
+        balance -= stocks[id].price;
+        stocks[id].owned++;
+        addToHistory('BUY', stocks[id].name, stocks[id].price);
+        updateUI();
+        await saveGameState();
+        await saveTransaction('BUY', id, stocks[id].name, stocks[id].price);
+    } else {
+        stockyAutomatedMsg("Hoot! You need more cash for that trade.");
+    }
 }
 
-function sellStock(id) {
+async function sellStock(id) {
     if (stocks[id].owned > 0) {
-        balance += stocks[id].price; stocks[id].owned--;
-        addToHistory('SELL', stocks[id].name, stocks[id].price); updateUI();
+        balance += stocks[id].price;
+        stocks[id].owned--;
+        addToHistory('SELL', stocks[id].name, stocks[id].price);
+        updateUI();
+        await saveGameState();
+        await saveTransaction('SELL', id, stocks[id].name, stocks[id].price);
     }
 }
 
@@ -143,5 +328,3 @@ setInterval(() => {
     });
     updateUI();
 }, 15000);
-
-createStockCards(); updateUI();

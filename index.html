@@ -17,6 +17,7 @@
                     <div class="flex gap-2 mt-2">
                         <button onclick="toggleModal('guide')" class="text-[10px] border border-blue-500/50 text-blue-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-blue-500/10 transition">Rules</button>
                         <button onclick="toggleModal('settings')" class="text-[10px] border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-emerald-500/10 transition">Edit Goal ⚙️</button>
+                        <button onclick="signOut()" id="signout-btn" class="hidden text-[10px] border border-red-500/50 text-red-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-red-500/10 transition">Sign Out</button>
                     </div>
                 </div>
 
@@ -25,7 +26,7 @@
                 <div class="flex flex-col min-w-[300px]">
                     <div class="flex justify-between text-[11px] mb-2 font-black uppercase tracking-widest text-slate-400">
                         <span>Target: <span id="goal-name-display" class="text-white">AirPod Max</span></span>
-                        <span id="goal-value-display" class="text-emerald-400">$200</span>
+                        <span><span id="goal-percent" class="text-white">0%</span> of <span id="goal-value-display" class="text-emerald-400">$200</span></span>
                     </div>
                     <div class="w-full bg-slate-900 h-3 rounded-full p-[2px] border border-white/10">
                         <div id="goal-bar" class="bg-gradient-to-r from-blue-600 to-emerald-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.4)]" style="width: 0%"></div>
@@ -102,6 +103,41 @@
             <button onclick="toggleModal('guide')" class="w-full mt-10 bg-blue-600 py-5 rounded-[2rem] font-black uppercase tracking-widest text-sm">Start Trading</button>
         </div>
     </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-[60] flex items-center justify-center p-6">
+        <div class="bg-slate-900 border border-white/10 p-12 rounded-[3.5rem] max-w-md w-full">
+            <h2 id="auth-title" class="text-3xl font-black mb-8 text-blue-400 uppercase italic tracking-tighter text-center">Sign In</h2>
+            <div class="space-y-6">
+                <input type="email" id="auth-email" placeholder="Email" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:border-blue-500 transition-all">
+                <input type="password" id="auth-password" placeholder="Password" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:border-blue-500 transition-all">
+            </div>
+            <p id="auth-error" class="text-red-400 text-xs mt-4 text-center hidden"></p>
+            <button onclick="handleAuth()" id="auth-submit-btn" class="w-full mt-8 bg-blue-600 py-5 rounded-[2rem] font-black uppercase tracking-widest text-sm hover:bg-blue-500 transition-all">Sign In</button>
+            <p id="auth-toggle" onclick="toggleAuthMode()" class="text-center mt-6 text-slate-400 text-xs cursor-pointer hover:text-white transition">Don't have an account? <span class="text-blue-400 font-bold">Sign Up</span></p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // TODO: Replace with your Firebase config from Firebase Console
+        const firebaseConfig = {
+        apiKey: "AIzaSyB_C8Lnbqo72BsL4RxNVVDuZZijqs3JHVA",
+        authDomain: "mini-market-9721c.firebaseapp.com",
+        projectId: "mini-market-9721c",
+        storageBucket: "mini-market-9721c.firebasestorage.app",
+        messagingSenderId: "64067443897",
+        appId: "1:64067443897:web:586a2bb12281fcb8398f68",
+        measurementId: "G-8PGHW9779Y"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
 
     <script src="script.js"></script>
 </body>
