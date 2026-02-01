@@ -21,8 +21,8 @@ function AccountSetup({ onComplete }) {
   // Pet appearance based on age
   const getPetStyle = () => {
     if (!userData.age) return '🦉';
-    if (userData.age <= 10) return '🐥'; // Young owl
-    if (userData.age <= 15) return '🦉'; // Teen owl  
+    if (userData.age <= 12) return '🐥'; // Young owl
+    if (userData.age <= 16) return '🦉'; // Teen owl
     return '🦅'; // Adult owl
   };
   
@@ -61,11 +61,11 @@ function AccountSetup({ onComplete }) {
   };
   
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center p-4 font-['Nunito']">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-['Nunito']">
       <div className="w-full max-w-6xl grid md:grid-cols-5 gap-8">
         
         {/* LEFT SIDE - Live Preview */}
-        <div className="md:col-span-2 bg-linear-to-br from-purple-800 to-indigo-900 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="md:col-span-2 bg-slate-900/80 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden border border-slate-800">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]"></div>
           
           <div className="relative z-10 text-center">
@@ -109,7 +109,7 @@ function AccountSetup({ onComplete }) {
         </div>
         
         {/* RIGHT SIDE - Form Steps */}
-        <div className="md:col-span-3 bg-slate-900/60 backdrop-blur-xl rounded-3xl p-8 border-2 border-slate-700 shadow-[0_0_40px_rgba(99,102,241,0.2)]">
+        <div className="md:col-span-3 bg-slate-900/60 backdrop-blur-xl rounded-3xl p-8 border border-slate-800 shadow-[0_12px_40px_rgba(15,23,42,0.6)]">
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
@@ -170,9 +170,9 @@ function AccountSetup({ onComplete }) {
                     }}
                   >
                     <option value="" disabled>Select your age...</option>
-                    {Array.from({ length: 7 }, (_, i) => i + 10).map(age => (
+                    {Array.from({ length: 8 }, (_, i) => i + 11).map(age => (
                       <option key={age} value={age}>
-                        {age} years old
+                        {age === 18 ? '18+' : `${age} years old`}
                       </option>
                     ))}
                   </select>

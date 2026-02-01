@@ -14,6 +14,7 @@ import Leaderboard from './Leaderboard';
 import { getStockPrices, buyStock, sellStock } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getPetPower } from '../utils/petPowers';
+import { sounds } from '../utils/sounds';
 
 function Dashboard({ userData }) {
   const { signOut, saveGameState, saveSettings, saveTransaction, loadTransactionHistory, updateLeaderboardEntry } = useAuth();
@@ -36,11 +37,11 @@ function Dashboard({ userData }) {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [settings, setSettings] = useState({
-    soundEnabled: true,
-    theme: userData?.theme || 'space',
-    petPersonality: userData?.petPersonality || 'friendly',
+    soundEnabled: userData?.settings?.soundEnabled ?? true,
+    theme: userData?.theme || userData?.settings?.theme || 'space',
+    petPersonality: userData?.petPersonality || userData?.settings?.petPersonality || 'friendly',
     difficulty: userData?.experience === 'expert' ? 'hard' : userData?.experience === 'intermediate' ? 'medium' : 'easy',
-    goalAmount: userData?.goalAmount || 200
+    goalAmount: userData?.goalAmount || userData?.settings?.goalAmount || 200
   });
   const [petPower, setPetPower] = useState(null);
   const [priceFreezeNext, setPriceFreezeNext] = useState(false);
@@ -69,7 +70,14 @@ function Dashboard({ userData }) {
 
   
   const GOAL = settings.goalAmount || userData?.goalAmount || 200;
-  const MILESTONES = useMemo(() => [25, 50, 75, 100, 150, 200], []);
+  const MILESTONES = useMemo(() => {
+    const age = userData?.age;
+    if (typeof age !== 'number') return [25, 50, 75, 100, 150, 200];
+    if (age <= 11) return [10, 20, 30, 40, 50, 75, 100, 125, 150, 175, 200];
+    if (age <= 14) return [20, 40, 60, 80, 100, 125, 150, 175, 200];
+    if (age <= 17) return [25, 50, 75, 100, 150, 200];
+    return [50, 100, 150, 200];
+  }, [userData?.age]);
   const level = Math.floor(xp / 100) + 1;
   const levelProgress = xp % 100;
   const hasTraded = useMemo(() => {
@@ -150,7 +158,7 @@ function Dashboard({ userData }) {
     }
   }, [hasTraded, petPower, portfolio, priceFreezeNext, settings.difficulty, stocks]);
 
-  const triggerAchievement = (amount) => {
+  const triggerAchievement = (amount, isGoal = false) => {
     const achievements = {
       25: { title: "First Steps!", emoji: "🎉", xp: 50, description: "You made your first $25!" },
       50: { title: "Getting Started!", emoji: "🚀", xp: 100, description: "Halfway to your first $100!" },
@@ -164,6 +172,14 @@ function Dashboard({ userData }) {
     setCurrentAchievement(achievements[amount] || fallback);
     setShowAchievement(true);
     setUnlockedAchievements(prev => [...prev, amount]);
+
+    if (settings.soundEnabled) {
+      if (isGoal) {
+        sounds.goalReached();
+      } else {
+        sounds.milestone();
+      }
+    }
   };
   
   // Fetch stock prices on mount and every X seconds (based on experience level)
@@ -172,9 +188,9 @@ function Dashboard({ userData }) {
     // Beginner: 20 seconds (slower, easier to react)
     // Intermediate: 15 seconds (balanced)
     // Expert: 10 seconds (faster, more challenging)
-    const updateInterval = userData?.experience === 'beginner' ? 180000 :
-                userData?.experience === 'expert' ? 90000 :
-                120000;
+    const updateInterval = userData?.experience === 'beginner' ? 300000 :
+                userData?.experience === 'expert' ? 180000 :
+                240000;
 
     fetchPrices();
     const interval = setInterval(fetchPrices, updateInterval);
@@ -207,7 +223,7 @@ function Dashboard({ userData }) {
   useEffect(() => {
     if (balance >= GOAL && lastBalance < GOAL) {
       setShowConfetti(true);
-      triggerAchievement(GOAL);
+      triggerAchievement(GOAL, true);
     }
     
     // Check for milestone achievements
@@ -448,90 +464,121 @@ function Dashboard({ userData }) {
     }
   };
 
+  const themeConfig = {
+    space: { base: 'bg-[#030712]', blobs: ['bg-indigo-600/20', 'bg-purple-600/20', 'bg-blue-600/20'], grid: 'rgba(99,102,241,0.08)' },
+    neon: { base: 'bg-[#0f172a]', blobs: ['bg-fuchsia-600/20', 'bg-cyan-500/20', 'bg-yellow-500/20'], grid: 'rgba(236,72,153,0.08)' },
+    ocean: { base: 'bg-[#0f172a]', blobs: ['bg-blue-600/20', 'bg-cyan-600/20', 'bg-sky-500/20'], grid: 'rgba(6,182,212,0.08)' },
+    forest: { base: 'bg-[#020617]', blobs: ['bg-emerald-600/20', 'bg-green-600/20', 'bg-lime-500/20'], grid: 'rgba(16,185,129,0.08)' },
+  };
+  
+  const currentBg = themeConfig[settings.theme] || themeConfig.space;
+
   return (
-    <div className="min-h-screen font-['Lexend'] text-white transition-all duration-500" style={{ backgroundColor: currentTheme.bg }}>
+    <div className="min-h-screen text-white transition-all duration-500 overflow-x-hidden relative" style={{ backgroundColor: 'transparent' }}>
+      
+      {/* VIBECODED BACKGROUND - BLOBS EDITION */}
+      <div className={`fixed inset-0 z-[-1] pointer-events-none overflow-hidden ${currentBg.base} transition-colors duration-700`}>
+        
+        {/* Blob 1 - Top Left */}
+        <div className={`absolute top-0 left-0 w-[500px] h-[500px] rounded-full mix-blend-screen filter blur-[80px] opacity-60 animate-blob ${currentBg.blobs[0]}`}></div>
+        
+        {/* Blob 2 - Top Right */}
+        <div className={`absolute top-0 right-0 w-[500px] h-[500px] rounded-full mix-blend-screen filter blur-[80px] opacity-60 animate-blob animation-delay-2000 ${currentBg.blobs[1]}`}></div>
+        
+        {/* Blob 3 - Bottom Left */}
+        <div className={`absolute -bottom-8 left-20 w-[500px] h-[500px] rounded-full mix-blend-screen filter blur-[80px] opacity-60 animate-blob animation-delay-4000 ${currentBg.blobs[2]}`}></div>
+
+        {/* Cyber Grid Overlay */}
+        <div className="absolute inset-0 transition-all duration-700"
+             style={{ 
+               backgroundImage: `linear-gradient(${currentBg.grid} 1px, transparent 1px), linear-gradient(90deg, ${currentBg.grid} 1px, transparent 1px)`, 
+               backgroundSize: '50px 50px',
+               maskImage: 'radial-gradient(ellipse at center, black 60%, transparent 100%)',
+               WebkitMaskImage: 'radial-gradient(ellipse at center, black 60%, transparent 100%)'
+             }}>
+        </div>
+      </div>
+
       {/* Top Bar */}
-      <header className={`sticky top-0 z-40 backdrop-blur-xl border-b border-white/10 p-6 shadow-2xl ${
-        settings.theme === 'ocean' ? 'bg-blue-950/90' :
-        settings.theme === 'forest' ? 'bg-green-950/90' :
-        settings.theme === 'neon' ? 'bg-zinc-950/90' :
-        'bg-slate-950/90'
-      }`}>
-        <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-center gap-8">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div>
-              <h1 className={`text-4xl font-black italic text-transparent bg-clip-text bg-linear-to-r ${currentTheme.gradient} uppercase tracking-tighter leading-none animate-pulse`}>
+      <header className="sticky top-4 z-40 mx-4 md:mx-8 rounded-3xl backdrop-blur-2xl bg-white/5 border border-white/10 p-4 lg:p-6 shadow-2xl transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-center gap-6 lg:gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-6 w-full lg:w-auto justify-between lg:justify-start">
+            <div className="flex flex-col items-center md:items-start group cursor-default">
+              <h1 className="text-4xl md:text-5xl font-bold italic tracking-tighter leading-none bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-blue-400 to-purple-400 drop-shadow-sm group-hover:scale-105 transition-transform duration-300 pointer-events-auto">
                 MINI MARKET
               </h1>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-3 flex-wrap justify-center">
                 <button
                   onClick={() => setShowInteractiveTutorial(true)}
-                  className="text-[10px] border border-blue-500/50 text-blue-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-blue-500/10 transition animate-bounce"
+                  className="text-[10px] border border-blue-400/30 text-blue-300 px-4 py-1.5 rounded-full uppercase font-bold tracking-wider hover:bg-blue-500/20 hover:scale-105 transition-all active:scale-95"
                 >
                   📚 Tutorial
                 </button>
                 <button
                   onClick={handleManualRefresh}
-                  className="text-[10px] border border-purple-500/50 text-purple-300 px-3 py-1 rounded-full uppercase font-bold hover:bg-purple-500/10 transition flex items-center gap-1"
+                  className="text-[10px] border border-purple-400/30 text-purple-300 px-4 py-1.5 rounded-full uppercase font-bold tracking-wider hover:bg-purple-500/20 hover:scale-105 transition-all flex items-center gap-1 active:scale-95"
                 >
                   <RefreshCw className={isManualRefreshing ? 'animate-spin' : ''} size={12} /> Refresh
                 </button>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="text-[10px] border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-emerald-500/10 transition"
+                  className="text-[10px] border border-emerald-400/30 text-emerald-300 px-4 py-1.5 rounded-full uppercase font-bold tracking-wider hover:bg-emerald-500/20 hover:scale-105 transition-all active:scale-95"
                 >
                   Edit Goal ⚙️
                 </button>
                 <button
                   onClick={() => setShowLeaderboard(true)}
-                  className="text-[10px] border border-yellow-500/50 text-yellow-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-yellow-500/10 transition flex items-center gap-1"
+                  className="text-[10px] border border-yellow-400/30 text-yellow-300 px-4 py-1.5 rounded-full uppercase font-bold tracking-wider hover:bg-yellow-500/20 hover:scale-105 transition-all flex items-center gap-1 active:scale-95"
                 >
                   <Trophy size={12} /> Leaderboard
                 </button>
                 <button
                   onClick={signOut}
-                  className="text-[10px] border border-red-500/50 text-red-400 px-3 py-1 rounded-full uppercase font-bold hover:bg-red-500/10 transition flex items-center gap-1"
+                  className="text-[10px] border border-rose-400/30 text-rose-300 px-4 py-1.5 rounded-full uppercase font-bold tracking-wider hover:bg-rose-500/20 hover:scale-105 transition-all flex items-center gap-1 active:scale-95"
                 >
                   <LogOut size={12} /> Sign Out
                 </button>
               </div>
             </div>
             
-            <div className="h-10 w-px bg-white/10 hidden md:block"></div>
+            <div className="h-12 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent hidden md:block"></div>
             
             {/* Big Money Display */}
-            <div className="glass-panel px-8 py-6 rounded-3xl border-4 shadow-2xl relative overflow-hidden" style={{ borderColor: currentTheme.accent }}>
-              {/* Animated Background */}
-              <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0 animate-pulse" style={{ background: `linear-gradient(45deg, ${currentTheme.accent}, transparent)` }}></div>
-              </div>
-              
-              <div className="relative">
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-sm text-white/60 font-bold">💰</span>
-                  <h2 className="text-5xl font-black tracking-tight animate-pulse" style={{ color: currentTheme.accent }}>
-                    ${balance.toFixed(2)}
-                  </h2>
-                  {userData?.experience === 'beginner' && (
-                    <BeginnerTooltip text="This is your cash! Use it to buy stocks when prices are LOW!" position="top" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-white/50">
-                  <span>Goal</span>
-                  <span className="text-emerald-300 font-bold">${GOAL}</span>
-                  <span>•</span>
-                  <span className="text-emerald-400 font-bold">{Math.floor((balance / GOAL) * 100)}%</span>
+            <div className="relative group perspective-1000">
+              <div className="absolute -inset-1 bg-gradient-to-r from-pink-600/30 to-purple-600/30 rounded-[2rem] blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative glass-panel bg-gradient-to-br from-white/10 to-white/5 px-8 py-5 rounded-[1.8rem] border border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl transition-transform duration-300 group-hover:-translate-y-1">
+                {/* Shine effect */}
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+                
+                <div className="relative">
+                  <div className="flex items-baseline gap-3 mb-1">
+                    <span className="text-xl animate-bounce-slow">💰</span>
+                    <h2 className="text-5xl lg:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-200 to-indigo-400 filter drop-shadow-lg">
+                      ${balance.toFixed(2)}
+                    </h2>
+                    {userData?.experience === 'beginner' && (
+                      <BeginnerTooltip text="This is your cash! Use it to buy stocks when prices are LOW!" position="top" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs font-medium text-indigo-200/70">
+                    <div className="w-full bg-slate-900/50 rounded-full h-2 w-24 overflow-hidden border border-white/5">
+                        <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-300" style={{ width: `${Math.min(100, Math.floor((balance / GOAL) * 100))}%` }}></div>
+                    </div>
+                    <span>{Math.floor((balance / GOAL) * 100)}% to ${GOAL}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           
           {/* Portfolio Mini Display */}
-          <div className="glass-panel px-6 py-4 rounded-2xl border-2 border-white/10 shadow-xl">
-            <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">Total Worth</p>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-black text-white">${netWorth.toFixed(2)}</h3>
-              <span className="text-xs text-slate-400">+${totalPortfolioValue.toFixed(2)} stocks</span>
+          <div className="glass-panel px-6 py-4 rounded-2xl border border-white/5 shadow-xl hover:bg-white/5 transition-colors duration-300">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-indigo-300/60 mb-1">Total Net Worth</p>
+            <div className="flex items-baseline gap-3">
+              <h3 className="text-2xl font-black text-white bg-clip-text bg-gradient-to-r from-white to-slate-400 text-transparent">${netWorth.toFixed(2)}</h3>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${totalPortfolioValue > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700/50 text-slate-400'}`}>
+                +${totalPortfolioValue.toFixed(2)} in stocks
+              </span>
             </div>
           </div>
         </div>
@@ -569,61 +616,85 @@ function Dashboard({ userData }) {
         onClose={() => setShowLeaderboard(false)}
       />
       
+      
       {/* Main Layout with Side Panel */}
-      <div className="max-w-400 mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-140px)]">
-        <main className="flex-1 p-8">
-          <div className="glass-panel rounded-3xl p-6 border border-white/10 mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-black text-white">Level {level}</div>
-              <div className="text-xs text-white/50">XP {xp}</div>
-            </div>
-            <div className="h-3 bg-slate-900/70 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-linear-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
-                style={{ width: `${levelProgress}%` }}
-              />
-            </div>
-            <div className="mt-4 grid md:grid-cols-2 gap-3">
-              {subgoals.map((goal) => (
-                <div
-                  key={goal.id}
-                  className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-between ${
-                    goal.completed
-                      ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200'
-                      : 'bg-slate-800/50 border-slate-700 text-white/70'
-                  }`}
-                >
-                  <span>{goal.title}</span>
-                  <span>+{goal.reward} XP</span>
+      <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-140px)] gap-8 p-4 lg:p-8">
+        <main className="flex-1">
+          {/* Level Progress Card */}
+          <div className="glass-panel rounded-[2rem] p-8 border border-white/5 mb-12 relative overflow-hidden group">
+             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-br from-indigo-500 to-purple-500 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+                    {level}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-indigo-200 uppercase tracking-wider">Current Level</div>
+                    <div className="text-xs text-white/40 font-mono">XP {xp} / 100</div>
+                  </div>
                 </div>
-              ))}
+                <div className="text-right">
+                  <span className="text-xs font-bold text-white/50 uppercase tracking-widest">Next Level</span>
+                </div>
+              </div>
+              
+              <div className="h-4 bg-black/20 rounded-full overflow-hidden backdrop-blur-sm border border-white/5 shadow-inner">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-1000 ease-out relative"
+                  style={{ width: `${levelProgress}%` }}
+                >
+                  <div className="absolute top-0 right-0 bottom-0 w-1 bg-white/50 blur-[2px]"></div>
+                </div>
+              </div>
+              
+              <div className="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {subgoals.map((goal) => (
+                  <div
+                    key={goal.id}
+                    className={`px-4 py-3 rounded-xl border text-xs font-bold flex items-center justify-between transition-all duration-300 ${
+                      goal.completed
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                        : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                       {goal.completed ? '✅' : '○'} {goal.title}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md ${goal.completed ? 'bg-emerald-500/20' : 'bg-black/20'}`}>+{goal.reward} XP</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {stocks.map(stock => (
-              <StockCard
-                key={stock.id}
-                stock={stock}
-                badge={stockBadges[stock.id]}
-                owned={portfolio[stock.id] || 0}
-                canAfford={balance >= getBuyPrice(stock)}
-                onBuy={handleBuy}
-                onSell={handleSell}
-                theme={currentTheme}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 pb-20">
+            {stocks.map((stock, index) => (
+              <div key={stock.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                <StockCard
+                  stock={stock}
+                  badge={stockBadges[stock.id]}
+                  owned={portfolio[stock.id] || 0}
+                  canAfford={balance >= getBuyPrice(stock)}
+                  onBuy={handleBuy}
+                  onSell={handleSell}
+                  theme={currentTheme}
+                />
+              </div>
             ))}
             {moonshotStock && (
-              <StockCard
-                key={moonshotStock.id}
-                stock={moonshotStock}
-                badge={{ label: 'MOONSHOT', color: 'yellow' }}
-                owned={portfolio[moonshotStock.id] || 0}
-                canAfford={balance >= getBuyPrice(moonshotStock)}
-                onBuy={handleBuy}
-                onSell={handleSell}
-                theme={currentTheme}
-              />
+              <div className="animate-fade-in" style={{ animationDelay: `${stocks.length * 0.1}s` }}>
+                <StockCard
+                  stock={moonshotStock}
+                  badge={{ label: 'MOONSHOT', color: 'yellow' }}
+                  owned={portfolio[moonshotStock.id] || 0}
+                  canAfford={balance >= getBuyPrice(moonshotStock)}
+                  onBuy={handleBuy}
+                  onSell={handleSell}
+                  theme={currentTheme}
+                />
+              </div>
             )}
           </div>
           

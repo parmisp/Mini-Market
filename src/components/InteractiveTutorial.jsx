@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, Check, TrendingUp, TrendingDown, DollarSign, Palette, Settings } from 'lucide-react';
 import StockChart from './StockChart';
 
@@ -34,6 +34,27 @@ export default function InteractiveTutorial({
     }
   ]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPracticeStocks((prev) =>
+        prev.map((stock) => {
+          const change = (Math.random() - 0.5) * 0.6;
+          const newPrice = Math.max(5, stock.price + change);
+          const trend = newPrice > stock.price ? 'up' : newPrice < stock.price ? 'down' : stock.trend;
+          const newHistory = [...stock.history, newPrice].slice(-12);
+          return {
+            ...stock,
+            price: parseFloat(newPrice.toFixed(2)),
+            trend,
+            history: newHistory
+          };
+        })
+      );
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const beginnerSteps = [
     {
       title: 'Welcome to the Trading Arcade!',
@@ -61,7 +82,7 @@ export default function InteractiveTutorial({
       icon: '🦉',
       content: 'Give your pet a high‑five to charge a power spark.',
       actionType: 'pet',
-      position: 'bottom-left'
+      position: 'bottom-right'
     },
     {
       title: 'Chatbot Corner',

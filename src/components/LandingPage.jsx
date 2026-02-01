@@ -37,32 +37,31 @@ function LandingPage({ onStart }) {
   }, []);
   
   return (
-    <div className="min-h-screen bg-game-bg relative overflow-hidden font-['Lexend']">
+    <div className="min-h-screen relative overflow-hidden text-white font-sans">
       {/* Animated Background */}
-      <div className="absolute inset-0">
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Subtle Overlay Grid */}
+        <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
         
         {/* Gradient Orbs */}
-        <div className="absolute top-20 left-20 w-96 h-96 bg-blue-600 rounded-full opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-emerald-500 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-indigo-500 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-violet-600/30 rounded-full mix-blend-screen blur-[100px] animate-pulse-slow"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-fuchsia-600/30 rounded-full mix-blend-screen blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/3 left-1/3 w-[30vw] h-[30vw] bg-cyan-500/20 rounded-full mix-blend-screen blur-[80px] animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
         
         {/* Floating Coins */}
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="absolute text-2xl animate-float-up opacity-30"
+            className="absolute text-4xl animate-float-up opacity-20 blur-[1px]"
             style={{
               left: `${Math.random() * 100}%`,
-              bottom: `-50px`,
+              bottom: `-100px`,
               animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${8 + Math.random() * 4}s`
+              animationDuration: `${10 + Math.random() * 8}s`,
+              transform: `scale(${0.5 + Math.random() * 0.5})`
             }}
           >
-            {i % 3 === 0 ? '💰' : i % 3 === 1 ? '💵' : '💎'}
+            {i % 3 === 0 ? '💰' : i % 3 === 1 ? '💎' : '🚀'}
           </div>
         ))}
       </div>
@@ -126,7 +125,7 @@ function LandingPage({ onStart }) {
         </div>
         
         {/* Title */}
-        <h1 className="text-6xl md:text-7xl font-black text-center mb-2 text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-indigo-400 to-emerald-400 uppercase italic tracking-tighter animate-fade-in">
+        <h1 className="text-6xl md:text-7xl font-black text-center mb-2 text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-indigo-400 to-emerald-400 uppercase tracking-tight">
           MINI MARKET
         </h1>
         
@@ -187,7 +186,7 @@ function LandingPage({ onStart }) {
         {/* Features Section - Below fold */}
         <div className="mt-32 mb-16 w-full max-w-5xl">
           <h3 className="text-3xl font-black text-center text-white mb-12 uppercase tracking-wide">
-            Why Kids Love Trading
+            Why People Love Trading
           </h3>
         </div>
       </div>
@@ -225,7 +224,7 @@ function LandingPage({ onStart }) {
       <div className="relative z-10 text-center pb-8">
         <div className="inline-block bg-linear-to-r from-yellow-500 to-amber-400 text-slate-900 font-black px-6 py-3 rounded-full shadow-lg">
           <Sparkles className="inline mr-2" size={20} />
-          Featured in: ELLEHacks 2025 🏆
+          Submitted to Ellehacks 2026
         </div>
       </div>
       

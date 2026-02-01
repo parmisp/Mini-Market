@@ -34,6 +34,8 @@ const StockyChatbot = ({
   const [lastTip, setLastTip] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef(null);
+  const speakIdRef = useRef(0);
+  const audioEnabledRef = useRef(true);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +44,15 @@ const StockyChatbot = ({
   useEffect(() => {
     return () => stopSpeech();
   }, []);
+
+  useEffect(() => {
+    audioEnabledRef.current = audioEnabled;
+    if (!audioEnabled) {
+      speakIdRef.current += 1;
+      stopSpeech();
+      setIsSpeaking(false);
+    }
+  }, [audioEnabled]);
   
   const personalityTone = {
     friendly: { prefix: '😊', suffix: 'You’ve got this!' },
@@ -168,23 +179,25 @@ const StockyChatbot = ({
   };
 
   const handleSpeak = async (text) => {
-    if (!audioEnabled || !text) return;
+    if (!audioEnabledRef.current || !text) return;
+    const speakId = ++speakIdRef.current;
     setIsSpeaking(true);
+    stopSpeech();
     await speakAsStocky(text);
-    setTimeout(() => setIsSpeaking(false), Math.max(1200, text.length * 60));
+    if (speakIdRef.current !== speakId || !audioEnabledRef.current) return;
+    setTimeout(() => {
+      if (speakIdRef.current === speakId) setIsSpeaking(false);
+    }, Math.max(1200, text.length * 60));
   };
 
   const toggleAudio = () => {
-    setAudioEnabled((prev) => {
-      if (prev) stopSpeech();
-      return !prev;
-    });
+    setAudioEnabled((prev) => !prev);
   };
   
   const showAutomatedTip = (text) => {
     setBubbleText(text);
     setLastTip(text);
-    if (audioEnabled) handleSpeak(text);
+    if (audioEnabledRef.current) handleSpeak(text);
     setTimeout(() => setBubbleText("Need help? Click Stocky!"), 5000);
   };
   

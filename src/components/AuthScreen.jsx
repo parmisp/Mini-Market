@@ -1,5 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useGLTF } from '@react-three/drei';
+
+function Diamond() {
+  const diamondRef = useRef();
+  const { scene } = useGLTF('/dimond.glb');
+
+  useFrame((state) => {
+    if (diamondRef.current) {
+      diamondRef.current.rotation.y += 0.005;
+      diamondRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+    }
+  });
+
+  return (
+    <primitive
+      ref={diamondRef}
+      object={scene}
+      scale={2}
+      position={[0, 0, 0]}
+    />
+  );
+}
+
+function DiamondModel() {
+  return (
+    <div className="absolute inset-0 opacity-30 pointer-events-none">
+      <Canvas>
+        <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[0, 0, 5]} />
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+          <pointLight position={[-10, -10, -5]} intensity={0.5} color="#667eea" />
+          <Environment preset="city" />
+          <Diamond />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
+
+useGLTF.preload('/dimond.glb');
 
 function AuthScreen({ onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -30,13 +72,23 @@ function AuthScreen({ onAuthSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 font-['Nunito']">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-3xl p-8 border-2 border-slate-700">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-['Nunito'] relative overflow-hidden">
+      <div className="absolute inset-0">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-500/10 blur-[140px]" />
+        <div className="absolute bottom-0 right-0 w-[520px] h-[520px] bg-emerald-500/10 blur-[140px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.08),transparent_55%)]" />
+      </div>
+
+      <div className="absolute inset-0 z-0">
+        <DiamondModel />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="bg-slate-900/80 backdrop-blur-2xl rounded-[28px] p-8 border border-slate-800/80 shadow-[0_30px_80px_rgba(6,10,25,0.7)]">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="text-7xl mb-4">🦉</div>
-            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 uppercase tracking-tighter">
+            <div className="text-5xl mb-4">🦉</div>
+            <h1 className="text-4xl font-black text-white tracking-tight">
               MINI MARKET
             </h1>
             <p className="text-slate-400 mt-2">
@@ -53,7 +105,7 @@ function AuthScreen({ onAuthSuccess }) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
                 required
-                className="w-full bg-slate-700/50 text-white text-lg font-bold px-6 py-4 rounded-xl border-2 border-slate-600 focus:border-emerald-400 focus:outline-none transition-all"
+                className="w-full bg-slate-800/70 text-white text-lg font-semibold px-5 py-4 rounded-2xl border border-slate-700 focus:border-emerald-400 focus:outline-none transition-all"
               />
             </div>
 
@@ -65,7 +117,7 @@ function AuthScreen({ onAuthSuccess }) {
                 placeholder="Password"
                 required
                 minLength={6}
-                className="w-full bg-slate-700/50 text-white text-lg font-bold px-6 py-4 rounded-xl border-2 border-slate-600 focus:border-emerald-400 focus:outline-none transition-all"
+                className="w-full bg-slate-800/70 text-white text-lg font-semibold px-5 py-4 rounded-2xl border border-slate-700 focus:border-emerald-400 focus:outline-none transition-all"
               />
             </div>
 
@@ -78,10 +130,10 @@ function AuthScreen({ onAuthSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full font-black py-4 px-6 rounded-xl transition-all ${
+              className={`w-full font-black py-4 px-6 rounded-2xl transition-all ${
                 loading
                   ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-white shadow-[0_4px_0_0_rgba(22,163,74,1)] hover:shadow-[0_2px_0_0_rgba(22,163,74,1)] hover:translate-y-1'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_18px_40px_rgba(16,185,129,0.25)]'
               }`}
             >
               {loading ? 'Loading...' : isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
