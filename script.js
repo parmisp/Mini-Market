@@ -279,20 +279,85 @@ async function sellStock(id) {
 }
 
 // Stocky AI Logic
-function handleChat() {
+// --- NEW: AI CONTEXT ENGINE ---
+
+function getMarketCondition() {
+    // Determine if market is "Bull" (rising) or "Bear" (falling)
+    const prices = Object.values(stocks).map(s => s.price);
+    const avgPrice = prices.reduce((a, b) => a + b) / prices.length;
+    return avgPrice > 12 ? "bullish" : "bearish";
+}
+
+function getUserLevel() {
+    // Dynamic experience leveling based on holdings and balance
+    const totalOwned = Object.values(stocks).reduce((a, b) => a + b.owned, 0);
+    if (totalOwned > 20) return "Pro";
+    if (totalOwned > 5) return "Intermediate";
+    return "Beginner";
+}
+
+function getPortfolioAnalysis() {
+    const holdings = Object.entries(stocks).filter(([_, s]) => s.owned > 0);
+    if (holdings.length === 0) return "empty";
+    
+    // Find highest concentration
+    const mainStock = holdings.sort((a, b) => b[1].owned - a[1].owned)[0];
+    return mainStock[0]; // Returns the ID of their most owned stock
+}
+
+// --- API CONFIGURATION ---
+const AI_CONFIG = {
+    URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+};
+
+async function handleChat() {
     const input = document.getElementById('chat-input');
-    const msg = input.value.trim().toLowerCase();
-    if (!msg) return;
-    addChatMessage(input.value, 'user-msg');
+    const userMsg = input.value.trim();
+    if (!userMsg) return;
+
+    // Display user message
+    addChatMessage(userMsg, 'user-msg');
     input.value = "";
-    setTimeout(() => {
-        let reply = "Hoot! That's a great question. Check the rules or ask Stocky about specific stocks.";
-        if (msg.includes("buy")) reply = "Stocky's tip: Buy when the price indicator is RED (cheap!) and sell when it's GREEN (profit).";
-        if (msg.includes("risk")) reply = "Stocky says: High risk stocks like Nebula swing fast. Be careful out there!";
-        if (msg.includes("goal")) reply = `Stocky is helping you save for ${goalName}! You need $${targetGoal} total worth to win.`;
-        if (msg.includes("who")) reply = "I'm Stocky, your Vantage AI Mentor! I'm here to help you become a finance pro.";
-        addChatMessage(reply, 'veda-msg');
-    }, 600);
+
+    // Prepare Contextual Data for the AI
+    const portfolioSummary = Object.entries(stocks)
+        .filter(([_, s]) => s.owned > 0)
+        .map(([_, s]) => `${s.owned}x ${s.name}`).join(", ") || "No stocks owned";
+
+    const marketSummary = Object.entries(stocks)
+        .map(([_, s]) => `${s.name}: $${s.price.toFixed(2)} (${s.risk} Risk)` )
+        .join(", ");
+
+    // The "System Instructions" tell the AI how to behave and what the game state is
+    const systemPrompt = `
+        You are Stocky, a wise owl and financial mentor in a trading game. 
+        USER CONTEXT:
+        - Current Balance: $${balance.toFixed(2)}
+        - Goal: ${goalName} ($${targetGoal})
+        - Portfolio: ${portfolioSummary}
+        - Market Prices: ${marketSummary}
+        - Experience Level: ${getUserLevel()}
+
+        Keep answers concise, witty (use owl puns like 'Hoot'), and helpful. 
+        If they ask for advice, use the data above to be specific.
+    `;
+
+    try {
+        const response = await fetch(`${AI_CONFIG.URL}?key=${AI_CONFIG.API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: `${systemPrompt}\n\nUser Question: ${userMsg}` }] }]
+            })
+        });
+
+        const data = await response.json();
+        const aiReply = data.candidates[0].content.parts[0].text;
+        addChatMessage(aiReply, 'veda-msg');
+    } catch (error) {
+        console.error("AI Error:", error);
+        addChatMessage("Hoot! My brain is a bit foggy. Check your connection!", 'veda-msg');
+    }
 }
 
 function addChatMessage(text, className) {
