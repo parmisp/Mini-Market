@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, Palette, Heart, Zap, RotateCcw, Download, Check } from 'lucide-react';
+import { Volume2, VolumeX, Palette, Heart, Zap, RotateCcw, Download, Check, Target } from 'lucide-react';
 
 const defaultSettings = {
   soundEnabled: true,
   theme: 'space',
   petPersonality: 'friendly',
-  difficulty: 'medium'
+  difficulty: 'medium',
+  goalAmount: 200
 };
 
 const SettingsDropdown = ({ isOpen, onClose, userData, onUpdateSettings, onSaveSettings }) => {

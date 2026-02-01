@@ -51,7 +51,8 @@ export function AuthProvider({ children }) {
     soundEnabled: true,
     theme: 'space',
     petPersonality: 'friendly',
-    difficulty: 'medium'
+    difficulty: 'medium',
+    goalAmount: 200
   };
 
   // Save user profile after account setup
