@@ -46,6 +46,14 @@ export function AuthProvider({ children }) {
     setUserData(null);
   }
 
+  // Default settings
+  const defaultSettings = {
+    soundEnabled: true,
+    theme: 'space',
+    petPersonality: 'friendly',
+    difficulty: 'medium'
+  };
+
   // Save user profile after account setup
   async function saveUserProfile(profileData) {
     if (!currentUser) return;
@@ -56,6 +64,7 @@ export function AuthProvider({ children }) {
       ...profileData,
       balance: 100,
       portfolio: {},
+      settings: defaultSettings,
       createdAt: now,
       lastPlayed: now
     };
@@ -118,6 +127,27 @@ export function AuthProvider({ children }) {
       }));
     } catch (error) {
       console.error('Error saving game state:', error);
+    }
+  }
+
+  // Save user settings (theme, sound, pet personality, difficulty)
+  async function saveSettings(settings) {
+    if (!currentUser) return;
+
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        settings,
+        lastPlayed: new Date().toISOString()
+      });
+
+      // Update local state
+      setUserData(prev => ({
+        ...prev,
+        settings
+      }));
+    } catch (error) {
+      console.error('Error saving settings:', error);
     }
   }
 
@@ -251,6 +281,7 @@ export function AuthProvider({ children }) {
     saveUserProfile,
     loadUserData,
     saveGameState,
+    saveSettings,
     saveTransaction,
     loadTransactionHistory,
     updateLeaderboardEntry,

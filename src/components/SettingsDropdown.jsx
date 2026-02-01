@@ -1,25 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, Palette, Heart, Zap, RotateCcw, Download, Target } from 'lucide-react';
+import { Volume2, VolumeX, Palette, Heart, Zap, RotateCcw, Download, Check } from 'lucide-react';
 
-const SettingsDropdown = ({ isOpen, onClose, userData, settings: externalSettings, onUpdateSettings }) => {
-  const [settings, setSettings] = useState({
-    soundEnabled: true,
-    theme: 'space',
-    petPersonality: 'friendly',
-    difficulty: 'medium',
-    goalAmount: userData?.goalAmount || 200
-  });
+const defaultSettings = {
+  soundEnabled: true,
+  theme: 'space',
+  petPersonality: 'friendly',
+  difficulty: 'medium'
+};
 
+const SettingsDropdown = ({ isOpen, onClose, userData, onUpdateSettings, onSaveSettings }) => {
+  const [settings, setSettings] = useState(defaultSettings);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Load settings from userData when component mounts or userData changes
   useEffect(() => {
-    if (externalSettings) {
-      setSettings(externalSettings);
+    if (userData?.settings) {
+      setSettings({ ...defaultSettings, ...userData.settings });
     }
-  }, [externalSettings]);
-  
-  const handleToggle = (key, value) => {
+  }, [userData]);
+
+  const handleToggle = async (key, value) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     onUpdateSettings?.(newSettings);
+
+    // Save to Firebase
+    if (onSaveSettings) {
+      setSaving(true);
+      setSaved(false);
+      try {
+        await onSaveSettings(newSettings);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch (error) {
+        console.error('Failed to save settings:', error);
+      }
+      setSaving(false);
+    }
   };
   
   const handleReset = () => {
@@ -51,10 +69,20 @@ const SettingsDropdown = ({ isOpen, onClose, userData, settings: externalSetting
       {/* Dropdown Panel */}
       <div className="absolute right-4 top-16 z-50 w-96 bg-slate-800/95 backdrop-blur-xl border-2 border-indigo-500/30 rounded-2xl shadow-2xl animate-fade-in overflow-hidden">
         {/* Header */}
-        <div className="bg-linear-to-r from-indigo-600 to-purple-600 p-4 border-b border-indigo-500/30">
-          <h3 className="text-2xl font-black text-white flex items-center gap-2">
-            ⚙️ SETTINGS
-          </h3>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 border-b border-indigo-500/30">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-black text-white flex items-center gap-2">
+              ⚙️ SETTINGS
+            </h3>
+            {saving && (
+              <span className="text-xs text-indigo-200 animate-pulse">Saving...</span>
+            )}
+            {saved && (
+              <span className="text-xs text-emerald-300 flex items-center gap-1">
+                <Check size={14} /> Saved!
+              </span>
+            )}
+          </div>
           <p className="text-indigo-200 text-sm mt-1">Customize your trading experience</p>
         </div>
         

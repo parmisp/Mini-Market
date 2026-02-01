@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import AuthScreen from './components/AuthScreen';
-import { useState, useEffect } from 'react';
-import { useAuth } from './contexts/AuthContext';
-import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
 import AccountSetup from './components/AccountSetup';
 import Dashboard from './components/Dashboard';
@@ -34,8 +31,8 @@ function App() {
       setLocalUserData(userData);
       setScreen('dashboard');
     } else {
-      // New user - show onboarding
-      setScreen('landing');
+      // New user - show account setup
+      setScreen('setup');
     }
   }, [loading, currentUser, userData]);
 

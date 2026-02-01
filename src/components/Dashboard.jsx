@@ -17,7 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getPetPower } from '../utils/petPowers';
 
 function Dashboard({ userData }) {
-  const { signOut, saveGameState, saveTransaction, loadTransactionHistory, updateLeaderboardEntry } = useAuth();
+  const { signOut, saveGameState, saveSettings, saveTransaction, loadTransactionHistory, updateLeaderboardEntry } = useAuth();
 
   const [stocks, setStocks] = useState([]);
   // Initialize from userData (Firestore) or default to 100
@@ -167,7 +167,8 @@ function Dashboard({ userData }) {
     setUnlockedAchievements(prev => [...prev, amount]);
   };
   
-  // Fetch stock prices on mount and every 60 seconds
+  // Fetch stock prices on mount and every X seconds (based on experience level)
+  // Volatility is controlled by difficulty setting passed to fetchPrices
   useEffect(() => {
     // Beginner: 20 seconds (slower, easier to react)
     // Intermediate: 15 seconds (balanced)
@@ -179,7 +180,7 @@ function Dashboard({ userData }) {
     fetchPrices();
     const interval = setInterval(fetchPrices, updateInterval);
     return () => clearInterval(interval);
-  }, [fetchPrices]);
+  }, [userData?.experience, settings.difficulty, fetchPrices]);
 
   // Load transaction history from Firestore on mount
   useEffect(() => {
@@ -425,13 +426,14 @@ function Dashboard({ userData }) {
   };
 
   return (
-    <div
-      className="min-h-screen font-['Lexend'] text-white transition-colors duration-500"
-      style={{ backgroundColor: currentTheme.bg }}
-    >
+    <div className={`min-h-screen ${themeBackgrounds[currentTheme]} font-['Lexend'] text-white transition-all duration-500`}>
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl border-b border-white/10 p-6 shadow-2xl" style={{ backgroundColor: `${currentTheme.bg}90` }}>
-        <div className="max-w-400 mx-auto flex flex-col lg:flex-row justify-between items-center gap-8">
+      <header className={`sticky top-0 z-40 backdrop-blur-xl border-b border-white/10 p-6 shadow-2xl ${
+        currentTheme === 'ocean' ? 'bg-blue-950/90' :
+        currentTheme === 'forest' ? 'bg-green-950/90' :
+        'bg-slate-950/90'
+      }`}>
+        <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-center gap-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div>
               <h1 className={`text-4xl font-black italic text-transparent bg-clip-text bg-linear-to-r ${currentTheme.gradient} uppercase tracking-tighter leading-none animate-pulse`}>
@@ -518,6 +520,7 @@ function Dashboard({ userData }) {
         userData={userData}
         settings={settings}
         onUpdateSettings={setSettings}
+        onSaveSettings={saveSettings}
       />
       
       {/* Confetti celebration */}

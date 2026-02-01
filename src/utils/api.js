@@ -15,13 +15,19 @@ MOCK_STOCKS.forEach(stock => {
   }
 });
 
+// Volatility multipliers based on difficulty
+const VOLATILITY = {
+  easy: 1,    // Small price swings: ±$0.50
+  medium: 2,  // Normal volatility: ±$1.00
+  hard: 4     // Big swings: ±$2.00
+};
+
 // Simulate price fluctuations
-const fluctuatePrices = (stocks, difficulty = 'medium', options = {}) => {
-  const volatility = difficulty === 'easy' ? 0.6 : difficulty === 'hard' ? 1.5 : 1;
-  const freeze = options.freeze === true;
+const fluctuatePrices = (stocks, difficulty = 'medium') => {
+  const volatility = VOLATILITY[difficulty] || VOLATILITY.medium;
 
   return stocks.map(stock => {
-    const change = freeze ? 0 : (Math.random() - 0.5) * 2 * volatility; // Random change between -1 and +1, scaled
+    const change = (Math.random() - 0.5) * volatility; // Varies by difficulty
     const newPrice = Math.max(5, stock.price + change); // Keep price above $5
     const trend = newPrice > stock.price ? 'up' : newPrice < stock.price ? 'down' : stock.trend;
     
@@ -38,12 +44,12 @@ const fluctuatePrices = (stocks, difficulty = 'medium', options = {}) => {
 };
 
 // Get current stock prices
-export const getStockPrices = async (difficulty = 'medium', options = {}) => {
+export const getStockPrices = async (difficulty = 'medium') => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300));
-  
-  // Update and return fluctuated prices
-  const updatedStocks = fluctuatePrices(MOCK_STOCKS, difficulty, options);
+
+  // Update and return fluctuated prices based on difficulty
+  const updatedStocks = fluctuatePrices(MOCK_STOCKS, difficulty);
   MOCK_STOCKS.forEach((stock, i) => {
     stock.price = updatedStocks[i].price;
     stock.trend = updatedStocks[i].trend;
