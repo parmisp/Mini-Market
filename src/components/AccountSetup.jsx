@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Zap, BookOpen } from 'lucide-react';
+import { getPetPower, getPowerHint } from '../utils/petPowers';
+import PetPowerBook from './PetPowerBook';
 
 function AccountSetup({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -11,6 +13,7 @@ function AccountSetup({ onComplete }) {
     experience: 'beginner'
   });
   const [petAnimation, setPetAnimation] = useState('normal');
+  const [showPowerBook, setShowPowerBook] = useState(false);
   
   const totalSteps = 5;
   const progress = (step / totalSteps) * 100;
@@ -58,11 +61,11 @@ function AccountSetup({ onComplete }) {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 font-['Nunito']">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-indigo-950 to-slate-900 flex items-center justify-center p-4 font-['Nunito']">
       <div className="w-full max-w-6xl grid md:grid-cols-5 gap-8">
         
         {/* LEFT SIDE - Live Preview */}
-        <div className="md:col-span-2 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="md:col-span-2 bg-linear-to-br from-purple-800 to-indigo-900 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]"></div>
           
           <div className="relative z-10 text-center">
@@ -106,7 +109,7 @@ function AccountSetup({ onComplete }) {
         </div>
         
         {/* RIGHT SIDE - Form Steps */}
-        <div className="md:col-span-3 bg-slate-800/50 backdrop-blur-xl rounded-3xl p-8 border-2 border-slate-700">
+        <div className="md:col-span-3 bg-slate-900/60 backdrop-blur-xl rounded-3xl p-8 border-2 border-slate-700 shadow-[0_0_40px_rgba(99,102,241,0.2)]">
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-2">
@@ -115,7 +118,7 @@ function AccountSetup({ onComplete }) {
             </div>
             <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                className="h-full bg-linear-to-r from-emerald-500 to-green-400 transition-all duration-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -125,7 +128,7 @@ function AccountSetup({ onComplete }) {
           </div>
           
           {/* Step Content */}
-          <div className="min-h-[400px]">
+          <div className="min-h-100">
             
             {/* STEP 1: Name */}
             {step === 1 && (
@@ -204,7 +207,7 @@ function AccountSetup({ onComplete }) {
                       onClick={() => setUserData({...userData, goalAmount: option.amount})}
                       className={`w-full p-6 rounded-2xl text-left transition-all transform hover:scale-105 ${
                         userData.goalAmount === option.amount
-                          ? 'bg-gradient-to-r from-emerald-500 to-green-400 text-white shadow-[0_0_20px_rgba(34,197,94,0.5)]'
+                          ? 'bg-linear-to-r from-emerald-500 to-green-400 text-white shadow-[0_0_20px_rgba(34,197,94,0.5)]'
                           : 'bg-slate-700 text-white hover:bg-slate-600'
                       }`}
                     >
@@ -245,7 +248,7 @@ function AccountSetup({ onComplete }) {
             {step === 4 && (
               <div className="animate-fade-in">
                 <h2 className="text-4xl font-black text-white mb-4">🦉 Name Your AI Pet!</h2>
-                <p className="text-white/70 text-lg mb-8">Your AI pet will guide you! Give them a name:</p>
+                <p className="text-white/70 text-lg mb-6">Your pet is your teammate. Names unlock powers & easter eggs!</p>
                 
                 <input
                   type="text"
@@ -254,15 +257,44 @@ function AccountSetup({ onComplete }) {
                   placeholder="Type a name..."
                   className="w-full bg-slate-700/50 text-white text-2xl font-bold px-6 py-4 rounded-xl border-2 border-slate-600 focus:border-purple-400 focus:outline-none transition-all mb-4"
                 />
+
+                <button
+                  onClick={() => setShowPowerBook(true)}
+                  className="mb-4 w-full bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <BookOpen size={18} /> Open the Pet Power Book
+                </button>
+                
+                {/* Show Power if Detected */}
+                {getPetPower(userData.petName) && (
+                  <div className="mb-4 animate-fade-in">
+                    <div className="glass-panel p-6 rounded-2xl border-4 border-yellow-400 bg-linear-to-r from-yellow-900/50 to-orange-900/50">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-4xl">{getPetPower(userData.petName).emoji}</span>
+                        <div>
+                          <div className="text-yellow-300 font-black text-xl flex items-center gap-2">
+                            <Zap className="text-yellow-400" />
+                            SPECIAL POWER UNLOCKED!
+                          </div>
+                          <div className="text-lg text-white font-bold">{getPetPower(userData.petName).name}</div>
+                        </div>
+                      </div>
+                      <div className="text-yellow-200 text-sm bg-black/30 p-3 rounded-lg">
+                        {getPetPower(userData.petName).effect}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="bg-purple-900/30 border border-purple-500/30 rounded-xl p-4 mb-4">
-                  <p className="text-purple-300 text-sm mb-2">💡 Try: Penny, Warren, Buffett, Coin!</p>
+                  <p className="text-purple-300 text-sm mb-2">💡 Try: Lucky, Diamond, Rocket, Dragon, Wizard, Phoenix!</p>
+                  <p className="text-purple-400 text-xs">Or famous names: Warren, Buffett, Elon, Musk! Psst… there’s a secret name 👀</p>
                 </div>
                 
-                <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-4">
+                <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-4 animate-pulse">
                   <p className="text-yellow-300 text-sm flex items-center gap-2">
-                    <Sparkles size={16} />
-                    EASTER EGG HINT: Special names unlock secret pet abilities!
+                    <Sparkles size={16} className="animate-spin" />
+                    {getPowerHint()}
                   </p>
                 </div>
               </div>
@@ -285,7 +317,7 @@ function AccountSetup({ onComplete }) {
                       onClick={() => setUserData({...userData, experience: option.value})}
                       className={`w-full p-6 rounded-2xl text-left transition-all transform hover:scale-105 ${
                         userData.experience === option.value
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]'
+                          ? 'bg-linear-to-r from-indigo-500 to-purple-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]'
                           : 'bg-slate-700 text-white hover:bg-slate-600'
                       }`}
                     >
@@ -322,7 +354,7 @@ function AccountSetup({ onComplete }) {
               disabled={!canProceed()}
               className={`flex-1 font-black py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-2 ${
                 canProceed()
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-white shadow-[0_4px_0_0_rgba(22,163,74,1)] hover:shadow-[0_2px_0_0_rgba(22,163,74,1)] hover:translate-y-1'
+                  ? 'bg-linear-to-r from-emerald-500 to-green-400 hover:from-emerald-400 hover:to-green-300 text-white shadow-[0_4px_0_0_rgba(22,163,74,1)] hover:shadow-[0_2px_0_0_rgba(22,163,74,1)] hover:translate-y-1'
                   : 'bg-slate-600 text-slate-400 cursor-not-allowed'
               }`}
             >
@@ -332,6 +364,12 @@ function AccountSetup({ onComplete }) {
           </div>
         </div>
       </div>
+
+      <PetPowerBook
+        isOpen={showPowerBook}
+        onClose={() => setShowPowerBook(false)}
+        currentName={userData.petName}
+      />
     </div>
   );
 }

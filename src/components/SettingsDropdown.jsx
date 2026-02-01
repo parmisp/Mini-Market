@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
-import { Volume2, VolumeX, Palette, Heart, Zap, RotateCcw, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Volume2, VolumeX, Palette, Heart, Zap, RotateCcw, Download, Target } from 'lucide-react';
 
-const SettingsDropdown = ({ isOpen, onClose, userData, onUpdateSettings }) => {
+const SettingsDropdown = ({ isOpen, onClose, userData, settings: externalSettings, onUpdateSettings }) => {
   const [settings, setSettings] = useState({
     soundEnabled: true,
     theme: 'space',
     petPersonality: 'friendly',
-    difficulty: 'medium'
+    difficulty: 'medium',
+    goalAmount: userData?.goalAmount || 200
   });
+
+  useEffect(() => {
+    if (externalSettings) {
+      setSettings(externalSettings);
+    }
+  }, [externalSettings]);
   
   const handleToggle = (key, value) => {
     const newSettings = { ...settings, [key]: value };
@@ -44,7 +51,7 @@ const SettingsDropdown = ({ isOpen, onClose, userData, onUpdateSettings }) => {
       {/* Dropdown Panel */}
       <div className="absolute right-4 top-16 z-50 w-96 bg-slate-800/95 backdrop-blur-xl border-2 border-indigo-500/30 rounded-2xl shadow-2xl animate-fade-in overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 border-b border-indigo-500/30">
+        <div className="bg-linear-to-r from-indigo-600 to-purple-600 p-4 border-b border-indigo-500/30">
           <h3 className="text-2xl font-black text-white flex items-center gap-2">
             ⚙️ SETTINGS
           </h3>
@@ -94,16 +101,17 @@ const SettingsDropdown = ({ isOpen, onClose, userData, onUpdateSettings }) => {
                 <p className="text-slate-400 text-xs">Change your background</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'space', name: 'Space 🌌', color: 'from-indigo-900 to-purple-900' },
+                { id: 'neon', name: 'Neon ⚡', color: 'from-pink-900 to-cyan-900' },
                 { id: 'ocean', name: 'Ocean 🌊', color: 'from-blue-900 to-cyan-900' },
                 { id: 'forest', name: 'Forest 🌲', color: 'from-green-900 to-emerald-900' }
               ].map(theme => (
                 <button
                   key={theme.id}
                   onClick={() => handleToggle('theme', theme.id)}
-                  className={`p-3 rounded-lg bg-gradient-to-br ${theme.color} border-2 transition-all ${
+                  className={`p-3 rounded-lg bg-linear-to-br ${theme.color} border-2 transition-all ${
                     settings.theme === theme.id 
                       ? 'border-white scale-105' 
                       : 'border-slate-700 hover:scale-105'
@@ -115,6 +123,29 @@ const SettingsDropdown = ({ isOpen, onClose, userData, onUpdateSettings }) => {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Goal Amount */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+            <div className="flex items-center gap-3 mb-3">
+              <Target className="w-6 h-6 text-emerald-400" />
+              <div>
+                <h4 className="text-white font-bold text-lg">Goal Amount</h4>
+                <p className="text-slate-400 text-xs">Change your target anytime</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-black text-emerald-400">$</span>
+              <input
+                type="number"
+                min="100"
+                max="1000"
+                value={settings.goalAmount}
+                onChange={(e) => handleToggle('goalAmount', parseInt(e.target.value) || 200)}
+                className="flex-1 p-3 text-lg font-black rounded-xl bg-slate-800 text-white border-2 border-slate-600 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2">Tip: You can also adjust this in the tutorial.</p>
           </div>
           
           {/* Pet Personality */}

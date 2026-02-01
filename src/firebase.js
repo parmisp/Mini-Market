@@ -3,13 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB_C8Lnbqo72BsL4RxNVVDuZZijqs3JHVA",
-  authDomain: "mini-market-9721c.firebaseapp.com",
-  projectId: "mini-market-9721c",
-  storageBucket: "mini-market-9721c.firebasestorage.app",
-  messagingSenderId: "64067443897",
-  appId: "1:64067443897:web:586a2bb12281fcb8398f68",
-  measurementId: "G-8PGHW9779Y"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
