@@ -172,9 +172,9 @@ function Dashboard({ userData }) {
     // Beginner: 20 seconds (slower, easier to react)
     // Intermediate: 15 seconds (balanced)
     // Expert: 10 seconds (faster, more challenging)
-    const updateInterval = userData?.experience === 'beginner' ? 120000 :
-                userData?.experience === 'expert' ? 60000 :
-                90000;
+    const updateInterval = userData?.experience === 'beginner' ? 180000 :
+                userData?.experience === 'expert' ? 90000 :
+                120000;
 
     fetchPrices();
     const interval = setInterval(fetchPrices, updateInterval);

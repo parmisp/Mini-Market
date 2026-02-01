@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
 import { getStockyResponse } from '../utils/ai';
+import { speakAsStocky, stopSpeech } from '../utils/speech';
 
 function OwlButtonModel() {
   const { scene } = useGLTF('/owl.glb');
@@ -29,11 +30,18 @@ const StockyChatbot = ({
   const [bubbleText, setBubbleText] = useState("Need help? Click Stocky!");
   const [petCooldown, setPetCooldown] = useState(false);
   const [petMessage, setPetMessage] = useState('Tap for a pet trick!');
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [lastTip, setLastTip] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef(null);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    return () => stopSpeech();
+  }, []);
   
   const personalityTone = {
     friendly: { prefix: '😊', suffix: 'You’ve got this!' },
@@ -158,9 +166,25 @@ const StockyChatbot = ({
     setMessages(prev => [...prev, { text: reply, sender: 'stocky' }]);
     setIsLoading(false);
   };
+
+  const handleSpeak = async (text) => {
+    if (!audioEnabled || !text) return;
+    setIsSpeaking(true);
+    await speakAsStocky(text);
+    setTimeout(() => setIsSpeaking(false), Math.max(1200, text.length * 60));
+  };
+
+  const toggleAudio = () => {
+    setAudioEnabled((prev) => {
+      if (prev) stopSpeech();
+      return !prev;
+    });
+  };
   
   const showAutomatedTip = (text) => {
     setBubbleText(text);
+    setLastTip(text);
+    if (audioEnabled) handleSpeak(text);
     setTimeout(() => setBubbleText("Need help? Click Stocky!"), 5000);
   };
   
@@ -305,7 +329,28 @@ const StockyChatbot = ({
       <div className="flex items-center gap-4">
         {!isOpen && (
           <div className="glass-panel p-4 rounded-4xl rounded-br-none text-[10px] font-bold max-w-50 border border-blue-500/40 shadow-2xl animate-fade-in">
-            {bubbleText}
+            <div className="flex items-start gap-2">
+              <div className="flex-1">{bubbleText}</div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={toggleAudio}
+                  title={audioEnabled ? 'Mute Stocky' : 'Unmute Stocky'}
+                  className={`p-1 rounded-md border ${
+                    audioEnabled ? 'border-blue-400/50 text-blue-200' : 'border-white/20 text-white/40'
+                  }`}
+                >
+                  {audioEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                </button>
+                <button
+                  onClick={() => handleSpeak(lastTip)}
+                  disabled={!audioEnabled || !lastTip}
+                  title="Replay"
+                  className="p-1 rounded-md border border-blue-400/50 text-blue-200 disabled:opacity-40"
+                >
+                  <RotateCcw className={`w-3 h-3 ${isSpeaking ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
         <button
