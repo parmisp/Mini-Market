@@ -426,11 +426,12 @@ function Dashboard({ userData }) {
   };
 
   return (
-    <div className={`min-h-screen ${themeBackgrounds[currentTheme]} font-['Lexend'] text-white transition-all duration-500`}>
+    <div className="min-h-screen font-['Lexend'] text-white transition-all duration-500" style={{ backgroundColor: currentTheme.bg }}>
       {/* Top Bar */}
       <header className={`sticky top-0 z-40 backdrop-blur-xl border-b border-white/10 p-6 shadow-2xl ${
-        currentTheme === 'ocean' ? 'bg-blue-950/90' :
-        currentTheme === 'forest' ? 'bg-green-950/90' :
+        settings.theme === 'ocean' ? 'bg-blue-950/90' :
+        settings.theme === 'forest' ? 'bg-green-950/90' :
+        settings.theme === 'neon' ? 'bg-zinc-950/90' :
         'bg-slate-950/90'
       }`}>
         <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-center gap-8">
