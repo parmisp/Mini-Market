@@ -10,6 +10,7 @@ function App() {
   const [screen, setScreen] = useState('loading');
   const [localUserData, setLocalUserData] = useState(null);
   const [showTransition, setShowTransition] = useState(false);
+  const [hasStartedAuth, setHasStartedAuth] = useState(false);
 
   // Determine which screen to show based on auth state
   useEffect(() => {
@@ -19,8 +20,8 @@ function App() {
     }
 
     if (!currentUser) {
-      setScreen('auth');
       setLocalUserData(null);
+      setScreen(hasStartedAuth ? 'auth' : 'landing');
       return;
     }
 
@@ -49,7 +50,8 @@ function App() {
   };
 
   const handleStart = () => {
-    setScreen('setup');
+    setHasStartedAuth(true);
+    setScreen('auth');
   };
 
   const handleSetupComplete = async (data) => {

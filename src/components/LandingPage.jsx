@@ -19,7 +19,7 @@ function OwlModel() {
 
 function LandingPage({ onStart }) {
   const [typedText, setTypedText] = useState('');
-  const fullText = "Where Kids Become Trading Pros!";
+  const fullText = "Level up your money powers!";
   
   useEffect(() => {
     // Typing animation
@@ -37,7 +37,7 @@ function LandingPage({ onStart }) {
   }, []);
   
   return (
-    <div className="min-h-screen bg-[#020617] relative overflow-hidden font-['Lexend']">
+    <div className="min-h-screen bg-game-bg relative overflow-hidden font-['Lexend']">
       {/* Animated Background */}
       <div className="absolute inset-0">
         {/* Grid Pattern */}
@@ -73,7 +73,7 @@ function LandingPage({ onStart }) {
         <div className="mb-8 mt-4">
           <div className="relative w-64 h-64">
             {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+            <div className="absolute inset-0 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-full blur-3xl opacity-50 animate-pulse"></div>
             
             {/* 3D Canvas for owl.glb */}
             <div className="relative w-64 h-64 rounded-full overflow-hidden border-8 border-white/20 animate-bounce-slow shadow-2xl"
@@ -103,7 +103,7 @@ function LandingPage({ onStart }) {
               
               {/* 3D Glass reflection overlay */}
               <div 
-                className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent rounded-full pointer-events-none"
+                className="absolute inset-0 bg-linear-to-br from-white/20 via-transparent to-transparent rounded-full pointer-events-none"
               ></div>
             </div>
             
@@ -126,7 +126,7 @@ function LandingPage({ onStart }) {
         </div>
         
         {/* Title */}
-        <h1 className="text-6xl md:text-7xl font-black text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 uppercase italic tracking-tighter animate-fade-in">
+        <h1 className="text-6xl md:text-7xl font-black text-center mb-2 text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-indigo-400 to-emerald-400 uppercase italic tracking-tighter animate-fade-in">
           MINI MARKET
         </h1>
         
@@ -135,28 +135,54 @@ function LandingPage({ onStart }) {
           {typedText}<span className="animate-blink">|</span>
         </p>
         
-        <div className="flex gap-3 mb-12">
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
           <div className="text-xs border border-emerald-500/50 text-emerald-400 px-4 py-2 rounded-full uppercase font-black">
             Real Market Feel
           </div>
           <div className="text-xs border border-blue-500/50 text-blue-400 px-4 py-2 rounded-full uppercase font-black">
-            AI Mentor Included
+            AI Mentor + Pet Powers
           </div>
           <div className="text-xs border border-purple-500/50 text-purple-400 px-4 py-2 rounded-full uppercase font-black">
-            100% Safe
+            100% Safe & Fun
+          </div>
+          <div className="text-xs border border-yellow-500/50 text-yellow-300 px-4 py-2 rounded-full uppercase font-black">
+            Arcade Missions
           </div>
         </div>
         
         {/* CTA Button */}
-        <button
-          onClick={onStart}
-          className="group bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-xl px-16 py-6 rounded-[2rem] uppercase tracking-widest shadow-2xl hover:shadow-emerald-500/50 hover:scale-105 transition-all duration-300 animate-pulse-slow"
-        >
-          <span className="flex items-center gap-3">
-            Start Trading
-            <ArrowRight className="group-hover:translate-x-2 transition-transform" size={24} />
-          </span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 mb-10">
+          <button
+            onClick={onStart}
+            className="group bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-black text-xl px-16 py-6 rounded-4xl uppercase tracking-widest shadow-2xl hover:shadow-emerald-500/50 hover:scale-105 transition-all duration-300 animate-pulse-slow"
+          >
+            <span className="flex items-center gap-3">
+              Start Trading
+              <ArrowRight className="group-hover:translate-x-2 transition-transform" size={24} />
+            </span>
+          </button>
+          <div className="bg-white/5 border border-white/10 rounded-4xl px-6 py-4 text-white/70 text-sm flex items-center gap-3">
+            <span className="text-2xl">✨</span>
+            <div className="text-left">
+              <div className="font-black text-white">Pet Powers & Easter Eggs</div>
+              <div className="text-xs text-white/60">Name your pet to unlock secrets</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl mb-16">
+          {[
+            { label: 'Traders Joined', value: '1,200+' },
+            { label: 'Pet Powers', value: '15+' },
+            { label: 'Safe Practice', value: '0 Risk' }
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+              <div className="text-2xl font-black text-white">{stat.value}</div>
+              <div className="text-xs text-white/60 uppercase tracking-widest">{stat.label}</div>
+            </div>
+          ))}
+        </div>
         
         {/* Features Section - Below fold */}
         <div className="mt-32 mb-16 w-full max-w-5xl">
@@ -197,7 +223,7 @@ function LandingPage({ onStart }) {
       
       {/* Bottom Badge */}
       <div className="relative z-10 text-center pb-8">
-        <div className="inline-block bg-gradient-to-r from-yellow-500 to-amber-400 text-slate-900 font-black px-6 py-3 rounded-full shadow-lg">
+        <div className="inline-block bg-linear-to-r from-yellow-500 to-amber-400 text-slate-900 font-black px-6 py-3 rounded-full shadow-lg">
           <Sparkles className="inline mr-2" size={20} />
           Featured in: ELLEHacks 2025 🏆
         </div>

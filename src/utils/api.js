@@ -16,9 +16,12 @@ MOCK_STOCKS.forEach(stock => {
 });
 
 // Simulate price fluctuations
-const fluctuatePrices = (stocks) => {
+const fluctuatePrices = (stocks, difficulty = 'medium', options = {}) => {
+  const volatility = difficulty === 'easy' ? 0.6 : difficulty === 'hard' ? 1.5 : 1;
+  const freeze = options.freeze === true;
+
   return stocks.map(stock => {
-    const change = (Math.random() - 0.5) * 2; // Random change between -1 and +1
+    const change = freeze ? 0 : (Math.random() - 0.5) * 2 * volatility; // Random change between -1 and +1, scaled
     const newPrice = Math.max(5, stock.price + change); // Keep price above $5
     const trend = newPrice > stock.price ? 'up' : newPrice < stock.price ? 'down' : stock.trend;
     
@@ -35,12 +38,12 @@ const fluctuatePrices = (stocks) => {
 };
 
 // Get current stock prices
-export const getStockPrices = async () => {
+export const getStockPrices = async (difficulty = 'medium', options = {}) => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300));
   
   // Update and return fluctuated prices
-  const updatedStocks = fluctuatePrices(MOCK_STOCKS);
+  const updatedStocks = fluctuatePrices(MOCK_STOCKS, difficulty, options);
   MOCK_STOCKS.forEach((stock, i) => {
     stock.price = updatedStocks[i].price;
     stock.trend = updatedStocks[i].trend;

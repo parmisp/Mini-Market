@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send } from 'lucide-react';
 
-const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
+const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'friendly', theme = 'space' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { text: "Hoot! I'm Stocky, your AI trading mentor. Ask me about buying, risks, or how to reach your goal!", sender: 'stocky' }
@@ -14,17 +14,27 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
+  const personalityTone = {
+    friendly: { prefix: '😊', suffix: 'You’ve got this!' },
+    wise: { prefix: '🧙', suffix: 'Patience grows profits.' },
+    silly: { prefix: '🤪', suffix: 'Boop! Markets are weird.' }
+  };
+
+  const tone = personalityTone[personality] || personalityTone.friendly;
+
+  const withTone = (text) => `${tone.prefix} ${text} ${tone.suffix}`;
+
   const getStockyReply = (msg) => {
     const lower = msg.toLowerCase();
     
     // Greetings
     if (lower.match(/^(hi|hello|hey|sup|yo)/)) {
-      return `Hoot hoot! Hey ${userData?.name || 'friend'}! Ready to make some smart trades today? 🦉`;
+      return withTone(`Hoot hoot! Hey ${userData?.name || 'friend'}! Ready to make smart trades today? 🦉`);
     }
     
     // Who are you
     if (lower.includes('who') && (lower.includes('you') || lower.includes('stocky'))) {
-      return "I'm Stocky, your Vantage AI Mentor! I'm here to help you become a finance pro and reach your goal! 🎯";
+      return withTone("I'm Stocky, your AI mentor! I'm here to help you reach your goal! 🎯");
     }
     
     // Buying advice
@@ -32,9 +42,9 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
       const greenStocks = stocks.filter(s => s.trend === 'up');
       const redStocks = stocks.filter(s => s.trend === 'down');
       if (redStocks.length > 0) {
-        return `🦉 Stocky's tip: I see ${redStocks[0].name} ${redStocks[0].emoji} is down! This could be a good time to buy low and sell high later. Remember: Buy RED, Sell GREEN!`;
+        return withTone(`Tip: ${redStocks[0].name} ${redStocks[0].emoji} is down! That can be a good time to buy low and sell high later.`);
       }
-      return "Hoot! Watch for stocks with DOWN arrows (🔻). That means they're cheaper right now. Buy low, sell high! 💰";
+      return withTone("Watch for DOWN arrows (🔻). That means they’re cheaper right now. Buy low, sell high! 💰");
     }
     
     // Selling advice
@@ -43,16 +53,16 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
       if (ownedStocks.length > 0) {
         const stock = stocks.find(s => s.id === ownedStocks[0]);
         if (stock && stock.trend === 'up') {
-          return `🦉 Great timing! Your ${stock.name} ${stock.emoji} is UP! Selling now = PROFIT! 📈`;
+          return withTone(`Great timing! Your ${stock.name} ${stock.emoji} is UP! Selling now = profit! 📈`);
         }
-        return `You own some stocks! Wait for the UP arrow (🔺) to appear, then sell for maximum profit! 💚`;
+        return withTone('You own some stocks! Wait for the UP arrow (🔺), then sell for profit! 💚');
       }
-      return "Hoot! You don't own any stocks yet. Buy some first, then sell when prices go up! 📊";
+      return withTone("You don't own any stocks yet. Buy some first, then sell when prices go up! 📊");
     }
     
     // Risk questions
     if (lower.includes('risk') || lower.includes('safe') || lower.includes('dangerous')) {
-      return "🦉 Stocky says: Stocks with BIG price swings are HIGH risk but can make more money! Start with LOW risk stocks to learn, then try riskier ones. Balance is key!";
+      return withTone("Stocks with BIG price swings are high risk but can make more money! Start with low risk to learn, then try riskier ones.");
     }
     
     // Goal questions
@@ -61,9 +71,9 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
       const totalWorth = balance + stocks.reduce((sum, s) => sum + (portfolio[s.id] || 0) * s.price, 0);
       const remaining = Math.max(0, goal - totalWorth);
       if (remaining === 0) {
-        return `🎉 AMAZING! You reached your goal! You're officially a Mini Market PRO! Keep trading to go even higher! 🏆`;
+        return withTone('AMAZING! You reached your goal! You’re a Mini Market PRO! 🏆');
       }
-      return `Your goal is to reach $${goal}! You need $${remaining.toFixed(2)} more. Keep making smart trades - you've got this! 💪`;
+      return withTone(`Your goal is $${goal}. You need $${remaining.toFixed(2)} more. Keep making smart trades! 💪`);
     }
     
     // Balance questions
@@ -71,20 +81,20 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
       if (balance < 10) {
         return `🦉 Hoot! You're low on cash ($${balance.toFixed(2)}). Sell some stocks to free up money for new trades! 💵`;
       }
-      return `You have $${balance.toFixed(2)} in cash. That's ${Math.floor(balance / 10)} potential trades at $10 each! Use it wisely! 🧠`;
+      return withTone(`You have $${balance.toFixed(2)} in cash. That’s about ${Math.floor(balance / 10)} trades at $10 each!`);
     }
     
     // Stock specific questions
     stocks.forEach(stock => {
       if (lower.includes(stock.name.toLowerCase()) || lower.includes(stock.emoji)) {
         const owned = portfolio[stock.id] || 0;
-        return `${stock.emoji} ${stock.name} is at $${stock.price.toFixed(2)} right now. You own ${owned} shares. ${stock.trend === 'up' ? 'It\'s going UP! 📈' : stock.trend === 'down' ? 'It\'s going DOWN! 📉' : 'Stable for now.'}`;
+        return withTone(`${stock.emoji} ${stock.name} is at $${stock.price.toFixed(2)}. You own ${owned} shares. ${stock.trend === 'up' ? 'It\'s going UP! 📈' : stock.trend === 'down' ? 'It\'s going DOWN! 📉' : 'Stable for now.'}`);
       }
     });
     
     // Help/tutorial
     if (lower.includes('help') || lower.includes('how') || lower.includes('start')) {
-      return "🦉 Here's how to play:\n1️⃣ Buy stocks when prices are LOW (red/down)\n2️⃣ Watch prices change every 15 seconds\n3️⃣ Sell when prices go UP (green) for profit\n4️⃣ Reach your goal = YOU WIN! 🎯";
+      return withTone("Here's how to play:\n1️⃣ Buy when prices are LOW\n2️⃣ Watch prices change\n3️⃣ Sell when prices go UP\n4️⃣ Reach your goal = YOU WIN! 🎯");
     }
     
     // Strategy questions
@@ -96,12 +106,12 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
         "🦉 Track which stocks you own. Sell the profitable ones when they're GREEN!",
         "🦉 Low-risk stocks move slower but are safer. High-risk = big swings! Choose wisely!"
       ];
-      return tips[Math.floor(Math.random() * tips.length)];
+      return withTone(tips[Math.floor(Math.random() * tips.length)]);
     }
     
     // Thank you
     if (lower.includes('thank') || lower.includes('thanks')) {
-      return "Hoot hoot! You're welcome! That's what mentors are for! Keep up the great trading! 🦉💙";
+      return withTone("You're welcome! Keep up the great trading! 🦉💙");
     }
     
     // Default responses
@@ -111,7 +121,7 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
       "Interesting! Want to know about buying strategies, risk levels, or your current portfolio? Just ask! 📊"
     ];
     
-    return defaults[Math.floor(Math.random() * defaults.length)];
+    return withTone(defaults[Math.floor(Math.random() * defaults.length)]);
   };
   
   const handleSend = () => {
@@ -142,14 +152,22 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
     }
   }, [balance]);
   
+  const themeColors = {
+    space: { accent: '#8b5cf6', panel: 'bg-indigo-600/20' },
+    neon: { accent: '#ec4899', panel: 'bg-pink-600/20' },
+    ocean: { accent: '#06b6d4', panel: 'bg-cyan-600/20' },
+    forest: { accent: '#10b981', panel: 'bg-emerald-600/20' }
+  };
+  const themeStyle = themeColors[theme] || themeColors.space;
+
   return (
     <div className="fixed bottom-10 right-10 z-50 flex flex-col items-end">
       {/* Chat Window */}
       {isOpen && (
-        <div className="glass-panel w-96 h-[32rem] mb-4 rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border-blue-500/30 animate-fade-in">
+        <div className="glass-panel w-96 h-128 mb-4 rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border-blue-500/30 animate-fade-in">
           {/* Header */}
-          <div className="bg-blue-600/20 p-4 border-b border-white/10 flex justify-between items-center">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-400">Stocky AI Mentor</span>
+          <div className={`${themeStyle.panel} p-4 border-b border-white/10 flex justify-between items-center`}>
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Stocky AI Mentor</span>
             <button 
               onClick={() => setIsOpen(false)}
               className="text-slate-400 hover:text-white transition-colors"
@@ -200,7 +218,7 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio }) => {
       {/* Floating Button */}
       <div className="flex items-center gap-4">
         {!isOpen && (
-          <div className="glass-panel p-4 rounded-[2rem] rounded-br-none text-[10px] font-bold max-w-[200px] border border-blue-500/40 shadow-2xl animate-fade-in">
+          <div className="glass-panel p-4 rounded-4xl rounded-br-none text-[10px] font-bold max-w-50 border border-blue-500/40 shadow-2xl animate-fade-in">
             {bubbleText}
           </div>
         )}
