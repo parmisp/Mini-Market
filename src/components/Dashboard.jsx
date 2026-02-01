@@ -11,7 +11,6 @@ import StockyChatbot from './StockyChatbot';
 import TradeHistory from './TradeHistory';
 import BeginnerTooltip from './BeginnerTooltip';
 import Leaderboard from './Leaderboard';
-import PetCompanion from './PetCompanion';
 import { getStockPrices, buyStock, sellStock } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getPetPower } from '../utils/petPowers';
@@ -173,9 +172,9 @@ function Dashboard({ userData }) {
     // Beginner: 20 seconds (slower, easier to react)
     // Intermediate: 15 seconds (balanced)
     // Expert: 10 seconds (faster, more challenging)
-    const updateInterval = userData?.experience === 'beginner' ? 20000 :
-                          userData?.experience === 'expert' ? 10000 :
-                          15000;
+    const updateInterval = userData?.experience === 'beginner' ? 120000 :
+                userData?.experience === 'expert' ? 60000 :
+                90000;
 
     fetchPrices();
     const interval = setInterval(fetchPrices, updateInterval);
@@ -425,6 +424,30 @@ function Dashboard({ userData }) {
     setIsManualRefreshing(false);
   };
 
+  const handlePetBoost = (bonus) => {
+    completeSubgoal('pet-trick');
+    if (!hasTraded) {
+      setPetBonusText('🦉 Make a trade first to unlock pet bonuses!');
+      return;
+    }
+    if (bonus?.type === 'coins') {
+      setBalance((prev) => prev + bonus.amount);
+      setPetBonusText(`🌟 Pet Bonus: +$${bonus.amount}`);
+    }
+    if (bonus?.type === 'freeze') {
+      setPriceFreezeNext(true);
+      setPetBonusText('❄️ Pet Freeze: next prices pause!');
+    }
+    if (bonus?.type === 'discount') {
+      setPetDiscountRemaining(1);
+      setPetBonusText('🪄 Discount: next BUY is 50% off!');
+    }
+    if (bonus?.type === 'secret-hoot') {
+      setBalance((prev) => prev + 2);
+      setPetBonusText('🦉 Secret Hoot: +$2');
+    }
+  };
+
   return (
     <div className="min-h-screen font-['Lexend'] text-white transition-all duration-500" style={{ backgroundColor: currentTheme.bg }}>
       {/* Top Bar */}
@@ -623,38 +646,9 @@ function Dashboard({ userData }) {
         portfolio={portfolio}
         personality={settings.petPersonality}
         theme={settings.theme}
-      />
-      
-      {/* Pet Companion */}
-      <PetCompanion 
         petName={userData?.petName}
         petPower={petPower}
-        balance={balance}
-        theme={settings.theme}
-        personality={settings.petPersonality}
-        onPetBoost={(bonus) => {
-          completeSubgoal('pet-trick');
-          if (!hasTraded) {
-            setPetBonusText('🦉 Make a trade first to unlock pet bonuses!');
-            return;
-          }
-          if (bonus?.type === 'coins') {
-            setBalance((prev) => prev + bonus.amount);
-            setPetBonusText(`🌟 Pet Bonus: +$${bonus.amount}`);
-          }
-          if (bonus?.type === 'freeze') {
-            setPriceFreezeNext(true);
-            setPetBonusText('❄️ Pet Freeze: next prices pause!');
-          }
-          if (bonus?.type === 'discount') {
-            setPetDiscountRemaining(1);
-            setPetBonusText('🪄 Discount: next BUY is 50% off!');
-          }
-          if (bonus?.type === 'secret-hoot') {
-            setBalance((prev) => prev + 2);
-            setPetBonusText('🦉 Secret Hoot: +$2');
-          }
-        }}
+        onPetBoost={handlePetBoost}
       />
 
       {/* Interactive Tutorial */}

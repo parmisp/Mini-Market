@@ -1,13 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send } from 'lucide-react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
+import { getStockyResponse } from '../utils/ai';
 
-const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'friendly', theme = 'space' }) => {
+function OwlButtonModel() {
+  const { scene } = useGLTF('/owl.glb');
+  return <primitive object={scene} scale={2.2} position={[0, -0.05, 0]} />;
+}
+
+const StockyChatbot = ({
+  stocks,
+  balance,
+  userData,
+  portfolio,
+  personality = 'friendly',
+  theme = 'space',
+  petName,
+  petPower,
+  onPetBoost
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { text: "Hoot! I'm Stocky, your AI trading mentor. Ask me about buying, risks, or how to reach your goal!", sender: 'stocky' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [bubbleText, setBubbleText] = useState("Need help? Click Stocky!");
+  const [petCooldown, setPetCooldown] = useState(false);
+  const [petMessage, setPetMessage] = useState('Tap for a pet trick!');
   const messagesEndRef = useRef(null);
   
   useEffect(() => {
@@ -124,20 +145,18 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'fr
     return withTone(defaults[Math.floor(Math.random() * defaults.length)]);
   };
   
-  const handleSend = () => {
-    if (!input.trim()) return;
-    
-    // Add user message
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
     const userMsg = { text: input, sender: 'user' };
     setMessages(prev => [...prev, userMsg]);
-    
-    // Get Stocky's reply
-    setTimeout(() => {
-      const reply = getStockyReply(input);
-      setMessages(prev => [...prev, { text: reply, sender: 'stocky' }]);
-    }, 600);
-    
     setInput('');
+    setIsLoading(true);
+
+    const aiReply = await getStockyResponse(input, stocks, balance, portfolio, userData);
+    const reply = aiReply || getStockyReply(input);
+    setMessages(prev => [...prev, { text: reply, sender: 'stocky' }]);
+    setIsLoading(false);
   };
   
   const showAutomatedTip = (text) => {
@@ -151,6 +170,46 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'fr
       showAutomatedTip("Hoot! Running low on cash? 💸");
     }
   }, [balance]);
+
+  useEffect(() => {
+    if (isOpen) return;
+
+    const tips = [
+      `🦉 ${petName || 'Your pet'} says: Watch for DOWN arrows, then buy low!`,
+      `🦉 ${petName || 'Your pet'} tip: Don’t spend all your cash at once.`,
+      `🦉 ${petName || 'Your pet'} hint: Sell when prices go UP for profit!`,
+      petPower?.name ? `✨ Pet Power: ${petPower.name} is ready when you are!` : null
+    ].filter(Boolean);
+
+    const interval = setInterval(() => {
+      const tip = tips[Math.floor(Math.random() * tips.length)];
+      if (tip) showAutomatedTip(tip);
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, petName, petPower?.name]);
+
+  const handlePetBoost = () => {
+    if (petCooldown) return;
+
+    setPetCooldown(true);
+    const boosts = [
+      { type: 'coins', amount: 2 },
+      { type: 'coins', amount: 3 },
+      { type: 'discount' },
+      { type: 'freeze' }
+    ];
+    if (petPower?.ability === 'secret-hoot') {
+      boosts.push({ type: 'secret-hoot' });
+    }
+    const bonus = boosts[Math.floor(Math.random() * boosts.length)];
+    onPetBoost?.(bonus);
+    setPetMessage('✨ Pet Trick activated!');
+    setTimeout(() => {
+      setPetCooldown(false);
+      setPetMessage('Tap for a pet trick!');
+    }, 4000);
+  };
   
   const themeColors = {
     space: { accent: '#8b5cf6', panel: 'bg-indigo-600/20' },
@@ -167,7 +226,12 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'fr
         <div className="glass-panel w-96 h-128 mb-4 rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border-blue-500/30 animate-fade-in">
           {/* Header */}
           <div className={`${themeStyle.panel} p-4 border-b border-white/10 flex justify-between items-center`}>
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Stocky AI Mentor</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-300">Stocky + Pet</span>
+              {petPower?.emoji && (
+                <span className="text-sm" title={petPower.name}>{petPower.emoji}</span>
+              )}
+            </div>
             <button 
               onClick={() => setIsOpen(false)}
               className="text-slate-400 hover:text-white transition-colors"
@@ -192,22 +256,44 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'fr
                 ))}
               </div>
             ))}
+            {isLoading && (
+              <div className="p-3 rounded-2xl border text-[11px] leading-relaxed bg-white/5 border-white/10 rounded-tl-none mr-8">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-fast"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-fast delay-100"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-fast delay-200"></div>
+                  <span>Stocky is thinking...</span>
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
           
           {/* Input */}
-          <div className="p-4 bg-white/5 border-t border-white/10 flex gap-2">
+          <div className="p-4 bg-white/5 border-t border-white/10 flex flex-col gap-3">
+            <div className="flex items-center justify-between text-[10px] text-white/70">
+              <span>{petMessage}</span>
+              <button
+                onClick={handlePetBoost}
+                disabled={petCooldown}
+                className="px-3 py-1 rounded-full border border-emerald-300/50 text-emerald-200 uppercase font-black tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {petCooldown ? 'Recharging…' : 'Pet Trick ✨'}
+              </button>
+            </div>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask Stocky anything..."
               className="flex-1 bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors"
+              disabled={isLoading}
             />
             <button
               onClick={handleSend}
-              className="bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-500 transition-colors"
+              className="bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-500 transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
               <Send className="w-4 h-4" />
             </button>
@@ -224,10 +310,17 @@ const StockyChatbot = ({ stocks, balance, userData, portfolio, personality = 'fr
         )}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-8xl cursor-pointer hover:scale-110 transition-transform animate-bounce-slow"
+          className="w-24 h-24 rounded-full overflow-hidden border border-blue-500/40 shadow-2xl hover:scale-110 transition-transform animate-bounce-slow bg-slate-900"
           style={{ filter: 'drop-shadow(0 10px 30px rgba(59, 130, 246, 0.3))' }}
+          aria-label="Open Stocky"
         >
-          🦉
+          <Canvas>
+            <PerspectiveCamera makeDefault position={[0, 0, 3.5]} />
+            <ambientLight intensity={0.9} />
+            <directionalLight position={[3, 3, 3]} intensity={1.2} />
+            <OwlButtonModel />
+            <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={2} />
+          </Canvas>
         </button>
       </div>
     </div>

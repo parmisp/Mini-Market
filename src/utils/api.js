@@ -17,9 +17,9 @@ MOCK_STOCKS.forEach(stock => {
 
 // Volatility multipliers based on difficulty
 const VOLATILITY = {
-  easy: 1,    // Small price swings: ±$0.50
-  medium: 2,  // Normal volatility: ±$1.00
-  hard: 4     // Big swings: ±$2.00
+  easy: 0.15,    // Tiny swings
+  medium: 0.3,   // Very small swings
+  hard: 0.5      // Small swings
 };
 
 // Simulate price fluctuations
@@ -27,7 +27,9 @@ const fluctuatePrices = (stocks, difficulty = 'medium') => {
   const volatility = VOLATILITY[difficulty] || VOLATILITY.medium;
 
   return stocks.map(stock => {
-    const change = (Math.random() - 0.5) * volatility; // Varies by difficulty
+    const shouldMove = Math.random() > 0.6;
+    const direction = Math.random() < 0.5 ? -1 : 1;
+    const change = shouldMove ? direction * (Math.random() * volatility) : 0;
     const newPrice = Math.max(5, stock.price + change); // Keep price above $5
     const trend = newPrice > stock.price ? 'up' : newPrice < stock.price ? 'down' : stock.trend;
     
